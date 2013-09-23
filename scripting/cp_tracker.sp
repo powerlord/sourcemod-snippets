@@ -9,6 +9,7 @@
 #pragma semicolon 1
 
 #define MAX_CONTROL_POINTS 9 // The limit is technically 8, but ignore that for now
+#define MAX_ROUNDS 10 // This is in theory unlimited, although practically the limit is 40,320.  Hydro has 8 rounds.
 
 enum ControlPoint
 {
@@ -29,13 +30,13 @@ new g_cpCount;
 new g_cpInfo[MAX_CONTROL_POINTS][ControlPoint];
 
 new g_roundCount;
-new g_cpRounds[MAX_CONTROL_POINTS][ControlPointRound];
+new g_cpRounds[MAX_ROUNDS][ControlPointRound];
 
 new Handle:g_Kv_RoundStrings;
 
 new curRoundEnt = -1;
 
-new g_roundCPs[MAX_CONTROL_POINTS];
+new g_roundCPs[MAX_ROUNDS];
 
 public Plugin:myinfo = 
 {
@@ -183,6 +184,11 @@ public OnRoundSpawned(entity)
 		return;
 	}
 	
+	new String:roundName[128];
+	GetEntPropString(entity, Prop_Data, "m_iName", roundName, sizeof(roundName));
+	
+	new index = GetRoundByName(roundName);
+	
 	if (g_Kv_RoundStrings == INVALID_HANDLE)
 	{
 		g_Kv_RoundStrings = CreateKeyValues("Rounds");
@@ -195,8 +201,6 @@ public OnRoundSpawned(entity)
 	new String:strEntity[6];
 	KvJumpToKey(g_Kv_RoundStrings, strEntity, true);
 	IntToString(entity, strEntity, sizeof(strEntity));
-	new String:roundName[64];
-	GetEntPropString(entity, Prop_Data, "m_iName", roundName, sizeof(roundName));
 	KvSetString(g_Kv_RoundStrings, "name", roundName);
 	KvSetNum(g_Kv_RoundStrings, "priority", GetEntProp(entity, Prop_Data, "m_nPriority"));
 }
@@ -228,6 +232,22 @@ GetIndexOfCp(entity)
 		}
 	}
 	
+	return -1;
+}
+
+GetIndexOfRound(entity)
+{
+}
+
+GetIndexOfRoundByName(const String:name[])
+{
+	for (new i = 0; i < g_roundCount; ++i)
+	{
+		if (StrEqual(name, g_cpRounds[i][ControlPointRound_Name]))
+		{
+			return i;
+		}
+	}
 	return -1;
 }
 
