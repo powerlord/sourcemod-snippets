@@ -28,6 +28,22 @@ enum TF2_GameMode
 	TF2_GameMode_ItemTest,
 }
 
+stock bool:TF2_IsMultiRound()
+{
+	new roundCount = 0;
+	new roundCP = -1;
+
+	while ((roundCP = FindEntityByClassname(roundCP, "team_control_point_round")) != -1)
+	{
+		roundCount++;
+		if (roundCount > 1)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 stock TF2_GameMode:TF2_DetectGameMode()
 {
 	

@@ -4,37 +4,38 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <tf2>
+#include "include/controlpoints.inc"
 
 #pragma semicolon 1
 
-#define MAX_CONTROL_POINTS 9
+#define MAX_CONTROL_POINTS 9 // The limit is technically 8, but ignore that for now
 
 enum ControlPoint
 {
 	ControlPoint_Entity,
 	bool:ControlPoint_Unlocked,
-	TFTeam:ControlPoint_Owner
+	TFTeam:ControlPoint_Owner,
+	String:ControlPoint_Name[128]
 }
 
-new TFGameType
+enum ControlPointRound
 {
-	TFGameType_CTF,
-	TFGameType_5CP,
-	TFGameType_ADCP,
-	TFGameType_TC,
-	TFGameType_PL,
-	TFGameType_PLR,
-	TFGameType_Arena,
-	TFGameType_KOTH,
-	TFGameType_SD,
-	TFGameType_MvM,
-	
+	ControlPointRound_Entity,
+	ControlPointRound_Priority,
+	String:ControlPointRound_Name[128]
 }
 
-new cpInfo[MAX_CONTROL_POINTS][ControlPoint];
+new g_cpCount;
+new g_cpInfo[MAX_CONTROL_POINTS][ControlPoint];
 
-new bool:multiRound;
+new g_roundCount;
+new g_cpRounds[MAX_CONTROL_POINTS][ControlPointRound];
+
 new Handle:g_Kv_RoundStrings;
+
+new curRoundEnt = -1;
+
+new g_roundCPs[MAX_CONTROL_POINTS];
 
 public Plugin:myinfo = 
 {
@@ -47,20 +48,115 @@ public Plugin:myinfo =
 
 public OnPluginStart()
 {
+	HookEvent("teamplay_round_selected", Event_SelectRound);
 	HookEntityOutput("team_control_point", "OnUnlocked", Hook_OnUnlocked);
 	HookEntityOutput("team_control_point", "OnRoundStartOwnedByTeam1", Hook_OnOwnerChangedToTeam1);
 	HookEntityOutput("team_control_point", "OnRoundStartOwnedByTeam2", Hook_OnOwnerChangedToTeam2);
 	HookEntityOutput("team_control_point", "OnOwnerChangedToTeam1", Hook_OnOwnerChangedToTeam1);
 	HookEntityOutput("team_control_point", "OnOwnerChangedToTeam2", Hook_OnOwnerChangedToTeam2);
 	HookEntityOutput("team_control_point", "OnCapReset", Hook_OnCapReset);
-	
 }
 
 public OnMapStart()
 {
-	multiRound = false;
 	CloseHandle(g_Kv_RoundStrings);
 	g_Kv_RoundStrings = INVALID_HANDLE;
+}
+
+public OnMapEnd()
+{
+	ResetPoints();
+	ResetRounds();
+}
+
+public Native_FindCaps(Handle:plugin, numParams)
+{
+	new bool:multiRound = TF2_IsMultiRound();
+	
+	new size = GetNativeCell(2);
+	new controlPoints[size];
+	
+	GetNativeArray(1, controlPoints, size);
+	
+	new TF2_GameMode:gameMode = TF2_DetectGameMode();
+	
+	switch (gameMode)
+	{
+		case TF2_GameMode_5CP:
+		{
+			return GetSymmetricCaps(controlPoints, size, multiRound);			
+		}
+		
+		case TF2_GameMode_PL, TF2_GameMode_ADCP:
+		{
+			return GetADCaps(controlPoints, size, multiRound);
+		}
+		
+		case TF2_GameMode_Arena, TF2_GameMode_PLR, TF2_GameMode_KOTH, TF2_GameMode_MvM:
+		{
+			return GetAllPoints(controlPoints, size, multiRound);
+		}
+	}
+	return 0;
+}
+
+// A/D CP, PL
+GetADCaps(controlPoints[], size, bool:multiRound)
+{
+	return 0;
+}
+
+// PLR, KOTH, TC, MvM
+GetAllPoints(controlPoints[], size, bool:multiRound)
+{
+	return 0;
+}
+
+// 5CP
+GetSymmetricCaps(controlPoints[], size, bool:multiRound)
+{
+	return 0;
+}
+
+public Event_SelectRound(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	if (!multiRound)
+	{
+		return;
+	}
+	
+	new String:curRound[128];
+	GetEventString(event, "round", curRound, sizeof(curRound));
+	
+	new round = -1;
+	
+	// Since we're multiround, loop through the rounds to find the selected one
+	while ((round = FindEntityByClassname(round, "team_control_point_round")) != -1)
+	{
+		new String:roundName[128];
+		GetEntPropString(round, Prop_Data, "m_iName", roundName, sizeof(roundName));
+		if (StrEqual(roundName, curRound))
+		{
+			new String:cpNames[1024];
+			GetEntPropString(round, Prop_Data, "m_iszCPNames", cpNames, sizeof(cpNames));
+			
+			new String:buffers[MAX_CONTROL_POINTS][128];
+			new cpCount = ExplodeString(cpNames, " ", buffers, sizeof(buffers), sizeof(buffers[]));
+			
+			new numCPs;
+			for (new i = 0; i < cpCount; ++i)
+			{
+				for (new j = 0; j < g_cpCount; ++j)
+				{
+					if (StrEqual(g_cpInfo[j][ControlPoint_Name][0], buffers[i]))
+					{
+						g_roundCPs[numCPs] = g_cpInfo[j][ControlPoint_Entity];
+						numCPs++;
+					}
+				}
+			}
+		}
+	}
 }
 
 public Action:Cmd_PrintCPStatus(client, args)
@@ -125,7 +221,7 @@ GetIndexOfCp(entity)
 	
 	for (new i = 0; i < MAX_CONTROL_POINTS; ++i)
 	{
-		new cpEnt = EntRefToEntIndex(cpInfo[i][ControlPoint_Entity]);
+		new cpEnt = EntRefToEntIndex(g_cpInfo[i][ControlPoint_Entity]);
 		if (entity == cpEnt)
 		{
 			return i;
@@ -138,9 +234,21 @@ GetIndexOfCp(entity)
 CpSetup(entity)
 {
 	new index = GetEntProp(entity, Prop_Data, "m_iPointIndex");
-	cpInfo[index][ControlPoint_Entity] = EntIndexToEntRef(entity);
-	cpInfo[index][ControlPoint_Unlocked] = bool:GetEntProp(entity, Prop_Data, "m_bLocked");
-	cpInfo[index][ControlPoint_Owner] = TFTeam:GetEntProp(entity, Prop_Data, "m_iDefaultOwner");
+	
+	new cpData[ControlPoint]; // Work around bug with GetEntPropString and sizes
+	cpData[ControlPoint_Entity] = EntIndexToEntRef(entity);
+	cpData[ControlPoint_Unlocked] = bool:GetEntProp(entity, Prop_Data, "m_bLocked");
+	cpData[ControlPoint_Owner] = TFTeam:GetEntProp(entity, Prop_Data, "m_iDefaultOwner");
+	GetEntPropString(entity, Prop_Data, "m_iName", cpData[ControlPoint_Name], sizeof(cpData[ControlPoint_Name]));
+	g_cpInfo[index] = cpData;
+}
+
+GetLowestCp(cps[], cpCount)
+{
+}
+
+GetCenterCp(cps[], cpCount)
+{
 }
 
 CpCleanup(entity)
@@ -148,10 +256,43 @@ CpCleanup(entity)
 	new index = GetIndexOfCp(entity);
 	if (index > -1)
 	{
-		cpInfo[index][ControlPoint_Entity] = 0;
-		cpInfo[index][ControlPoint_Unlocked] = false;
-		cpInfo[index][ControlPoint_Owner] = TFTeam_Unassigned;
+		ResetPoint(index);
 	}
+}
+
+ResetPoints()
+{
+	for (new i = 0; i < g_cpCount; ++i)
+	{
+		ResetPoint(i);
+	}
+	
+	g_cpCount = 0;
+}
+
+ResetPoint(index)
+{
+	g_cpInfo[index][ControlPoint_Entity] = 0;
+	g_cpInfo[index][ControlPoint_Unlocked] = false;
+	g_cpInfo[index][ControlPoint_Owner] = TFTeam_Unassigned;
+	g_cpInfo[index][ControlPoint_Name][0] =   '\0';
+}
+
+ResetRounds()
+{
+	for (new i = 0; i < g_roundCount; ++i)
+	{
+		ResetRound(i);
+	}
+
+	g_roundCount = 0;
+}
+
+ResetRound(index)
+{
+	g_cpRounds[index][ControlPointRound_Entity] = 0;
+	g_cpRounds[index][ControlPointRound_Priority] = 0;
+	g_cpRounds[index][ControlPointRound_Name][0] = '\0';
 }
 
 public Hook_OnUnlocked(const String:output[], caller, activator, Float:delay)
@@ -163,7 +304,7 @@ public Hook_OnUnlocked(const String:output[], caller, activator, Float:delay)
 		return;
 	}
 
-	cpInfo[index][ControlPoint_Unlocked] = true;
+	g_cpInfo[index][ControlPoint_Unlocked] = true;
 }
 
 public Hook_OnOwnerChangedToTeam1(const String:output[], caller, activator, Float:delay)
@@ -175,7 +316,7 @@ public Hook_OnOwnerChangedToTeam1(const String:output[], caller, activator, Floa
 		return;
 	}
 	
-	cpInfo[index][ControlPoint_Owner] = TFTeam_Red;
+	g_cpInfo[index][ControlPoint_Owner] = TFTeam_Red;
 }
 
 public Hook_OnOwnerChangedToTeam2(const String:output[], caller, activator, Float:delay)
@@ -187,7 +328,7 @@ public Hook_OnOwnerChangedToTeam2(const String:output[], caller, activator, Floa
 		return;
 	}
 
-	cpInfo[index][ControlPoint_Owner] = TFTeam_Red;
+	g_cpInfo[index][ControlPoint_Owner] = TFTeam_Red;
 }
 
 public Hook_OnCapReset(const String:output[], caller, activator, Float:delay)
@@ -199,5 +340,5 @@ public Hook_OnCapReset(const String:output[], caller, activator, Float:delay)
 		return;
 	}
 
-	cpInfo[index][ControlPoint_Owner] = TFTeam_Unassigned;
+	g_cpInfo[index][ControlPoint_Owner] = TFTeam_Unassigned;
 }
