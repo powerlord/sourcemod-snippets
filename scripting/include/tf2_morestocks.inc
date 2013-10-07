@@ -17,7 +17,8 @@
 #include <tf2>
 
 // Taken from TF2ItemsInfo
-enum
+#if !defined _tf2itemsinfo_included
+enum TF2ItemSlot
 {
 	TF2ItemSlot_Primary = 0,
 	TF2ItemSlot_Secondary = 1,
@@ -32,6 +33,7 @@ enum
 	TF2ItemSlot_Misc = 6,
 	TF2ItemSlot_Action = 7
 };
+#endif
 
 // This enum represents the order of values in DT_TFPlayerScoringDataExclusive
 // Since the first offset is 4 (not 0), start the enum at 1
@@ -91,32 +93,32 @@ stock TF2_GetBaseHealth(TFClassType:class)
  */
 stock TF2_GetHealth(client)
 {
-	return GetResourceProp(resourceName, "m_iHealth");
+	return GetResourceProp("m_iHealth", client);
 }
 
 /**
  * Get a client's max health.
  * 
  * @param client	A client index
- * @param overheal	If true, return the max overheal health.
+ * 
+ * @return client's max health
+ */
+stock TF2_GetMaxHealth(client)
+{
+	return GetResourceProp("m_iMaxHealth", client);
+}
+
+/**
+ * Get a client's max overheal.
+ * 
+ * @param client	A client index
  * NOTE: The overheal health is the standard overheal health, not the Quick-Fix's half overheal health.
  * 
  * @return client's max health
  */
-stock TF2_GetMaxHealth(client, bool:overheal=false)
+stock TF2_GetMaxOverheal(client)
 {
-	new String:resourceName[32];
-	
-	if (overheal)
-	{
-		strcopy(resourceName, sizeof(resourceName), "m_iMaxBuffedHealth");
-	}
-	else
-	{
-		strcopy(resourceName, sizeof(resourceName), "m_iMaxHealth");
-	}
-	
-	return GetResourceProp(resourceName, client);
+	return GetResourceProp("m_iMaxBuffedHealth", client);
 }
 
 /**
@@ -197,129 +199,4 @@ stock TF2_GetRoundScoreData(client, TF2ScoreData:dataType)
 	}
 
 	return GetEntProp(client, Prop_Send, "m_RoundScoreData", 4, _:dataType);
-}
-
-/**
- * Print to chat matching a target mask.
- * 
- * @param pattern	The target mask
- * @param format	Formatting rules
- * @param ,,,		Variable number of format parameters
- */
-stock PrintToChatTarget(const String:pattern[], const String:format[], any:...)
-{
-	decl String:buffer[192];
-	
-	new targets[MaxClients];
-	decl String:target_name[128];
-	new bool:tn_is_ml;
-	
-	new targetCount = ProcessTargetString(pattern, 0, targets, MaxClients, COMMAND_FILTER_NO_IMMUNITY, target_name, sizeof(target_name), tn_is_ml);
-
-	for (new i = 0; i < targetCount; ++i)
-	{
-		if (IsClientInGame(targets[i]))
-		{
-			SetGlobalTransTarget(targets[i]);
-			VFormat(buffer, sizeof(buffer), format, 3);
-			PrintToChat(i, "%s", buffer);
-		}
-	}
-}
-
-/**
- * Prints a message to all clients on a team
- * 
- * @param team		Team to print message to.
- * @param format	Formatting rules.
- * @param ...		Variable number of format parameters.
- * @noreturn
- */
-stock PrintToChatTeam(team, const String:format[], any:...)
-{
-	decl String:buffer[192];
-	
-	for (new i = 1; i <= MaxClients; ++i)
-	{
-		if (IsClientInGame(i) && GetClientTeam(i) == team)
-		{
-			SetGlobalTransTarget(i);
-			VFormat(buffer, sizeof(buffer), format, 3);
-			PrintToChat(i, "%s", buffer);
-		}
-	}
-}
-
-/**
- * Prints a message to all clients but one in the chat area
- * 
- * @param client	Client index to skip.
- * @param format	Formatting rules.
- * @param ...		Variable number of format parameters.
- * @noreturn
- */
-stock PrintToChatAllButOne(client, const String:format[], any:...)
-{
-	decl String:buffer[192];
-	
-	for (new i = 1; i <= MaxClients; ++i)
-	{
-		if (IsClientInGame(i) && i != client)
-		{
-			SetGlobalTransTarget(i);
-			VFormat(buffer, sizeof(buffer), format, 3);
-			PrintToChat(i, "%s", buffer);
-		}
-	}
-}
-
-stock PrintHintTextToTarget(const String:pattern[], const String:format[], any:...)
-{
-	decl String:buffer[192];
-	
-	new targets[MaxClients];
-	decl String:target_name[128];
-	new bool:tn_is_ml;
-	
-	new targetCount = ProcessTargetString(pattern, 0, targets, MaxClients, COMMAND_FILTER_NO_IMMUNITY, target_name, sizeof(target_name), tn_is_ml);
-
-	for (new i = 0; i < targetCount; ++i)
-	{
-		if (IsClientInGame(targets[i]))
-		{
-			SetGlobalTransTarget(targets[i]);
-			VFormat(buffer, sizeof(buffer), format, 3);
-			PrintHintText(i, "%s", buffer);
-		}
-	}
-}
-
-stock PrintHintTextToTeam(team, const String:format[], any:...)
-{
-	decl String:buffer[192];
-	
-	for (new i = 1; i <= MaxClients; ++i)
-	{
-		if (IsClientInGame(i) && GetClientTeam(i) == team)
-		{
-			SetGlobalTransTarget(i);
-			VFormat(buffer, sizeof(buffer), format, 3);
-			PrintHintText(i, "%s", buffer);
-		}
-	}
-}
-
-stock PrintHintTextToAllButOne(client, const String:format[], any:...)
-{
-	decl String:buffer[192];
-	
-	for (new i = 1; i <= MaxClients; ++i)
-	{
-		if (IsClientInGame(i) && i != client)
-		{
-			SetGlobalTransTarget(i);
-			VFormat(buffer, sizeof(buffer), format, 3);
-			PrintHintText(i, "%s", buffer);
-		}
-	}
 }
