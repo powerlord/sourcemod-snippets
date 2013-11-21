@@ -8,9 +8,9 @@
 new Handle:g_Cvar_Enabled;
 
 public Plugin:myinfo = {
-	name			= "",
+	name			= "Check Items",
 	author			= "Powerlord",
-	description		= "",
+	description		= "Check Items test stuff",
 	version			= VERSION,
 	url				= ""
 };
