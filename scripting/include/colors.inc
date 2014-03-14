@@ -2,7 +2,7 @@
  *                                                                        *
  *                       Colored Chat Functions                           *
  *                   Author: exvel, Editor: Popoklopsi, Powerlord, Bara   *
- *                           Version: 1.1.3	                              *
+ *                           Version: 1.2.0	                              *
  *                                                                        *
  **************************************************************************/
  
@@ -668,7 +668,8 @@ stock CShowActivity(client, const String:format[], any:...)
 			/* Treat this as a normal user. */
 			if ((value & 1) | (value & 2))
 			{
-				new String:newsign[MAX_NAME_LENGTH] = sign;
+				new String:newsign[MAX_NAME_LENGTH];
+				newsign = sign;
 				if ((value & 2) || (i == client))
 				{
 					newsign = name;
@@ -686,7 +687,8 @@ stock CShowActivity(client, const String:format[], any:...)
 				|| (value & 8)
 				|| ((value & 16) && is_root))
 			{
-				new String:newsign[MAX_NAME_LENGTH] = sign;
+				new String:newsign[MAX_NAME_LENGTH]
+				newsign = sign;
 				if ((value & 8) || ((value & 16) && is_root) || (i == client))
 				{
 					newsign = name;
@@ -765,7 +767,8 @@ stock CShowActivityEx(client, const String:tag[], const String:format[], any:...
 			/* Treat this as a normal user. */
 			if ((value & 1) | (value & 2))
 			{
-				new String:newsign[MAX_NAME_LENGTH] = sign;
+				new String:newsign[MAX_NAME_LENGTH];
+				newsign = sign;
 				if ((value & 2) || (i == client))
 				{
 					newsign = name;
@@ -783,7 +786,8 @@ stock CShowActivityEx(client, const String:tag[], const String:format[], any:...
 				|| (value & 8)
 				|| ((value & 16) && is_root))
 			{
-				new String:newsign[MAX_NAME_LENGTH] = sign;
+				new String:newsign[MAX_NAME_LENGTH];
+				newsign = sign;
 				if ((value & 8) || ((value & 16) && is_root) || (i == client))
 				{
 					newsign = name;
@@ -871,7 +875,8 @@ stock CShowActivity2(client, const String:tag[], const String:format[], any:...)
 			/* Treat this as a normal user. */
 			if ((value & 1) | (value & 2))
 			{
-				new String:newsign[MAX_NAME_LENGTH] = sign;
+				new String:newsign[MAX_NAME_LENGTH];
+				newsign = sign;
 				if ((value & 2))
 				{
 					newsign = name;
@@ -889,7 +894,8 @@ stock CShowActivity2(client, const String:tag[], const String:format[], any:...)
 			|| (value & 8)
 			|| ((value & 16) && is_root))
 			{
-				new String:newsign[MAX_NAME_LENGTH] = sign;
+				new String:newsign[MAX_NAME_LENGTH];
+				newsign = sign;
 				if ((value & 8) || ((value & 16) && is_root))
 				{
 					newsign = name;
