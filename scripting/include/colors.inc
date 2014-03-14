@@ -703,6 +703,17 @@ stock CShowActivity(client, const String:format[], any:...)
 	return 1;
 }
 
+/**
+ * Same as CShowActivity(), except the tag parameter is used instead of "[SM] " (note that you must supply any spacing).
+ * Supports color tags.
+ *
+ * @param client		Client index doing the action, or 0 for server.
+ * @param tags			Tag to display with.
+ * @param format		Formatting rules.
+ * @param ...			Variable number of format parameters.
+ * @noreturn
+ * @error
+ */
 stock CShowActivityEx(client, const String:tag[], const String:format[], any:...)
 {
 	if (sm_show_activity == INVALID_HANDLE)
@@ -802,6 +813,19 @@ stock CShowActivityEx(client, const String:tag[], const String:format[], any:...
 	return 1;
 }
 
+/**
+ * Displays usage of an admin command to users depending on the setting of the sm_show_activity cvar.
+ * All users receive a message in their chat text, except for the originating client, 
+ * who receives the message based on the current ReplySource.
+ * Supports color tags.
+ *
+ * @param client		Client index doing the action, or 0 for server.
+ * @param tags			Tag to prepend to the message.
+ * @param format		Formatting rules.
+ * @param ...			Variable number of format parameters.
+ * @noreturn
+ * @error
+ */
 stock CShowActivity2(client, const String:tag[], const String:format[], any:...)
 {
 	if (sm_show_activity == INVALID_HANDLE)
