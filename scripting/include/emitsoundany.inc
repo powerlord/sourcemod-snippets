@@ -32,8 +32,8 @@
  * Version: 1.0
  */
 
-new bool:g_bCheckedEngine = false;
-new bool:g_bNeedsFakePrecache = false;
+static bool:g_bCheckedEngine = false;
+static bool:g_bNeedsFakePrecache = false;
 
 stock static EmitSoundCheckEngineVersion()
 {
