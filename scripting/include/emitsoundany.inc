@@ -29,7 +29,7 @@
  * exceptions, found in LICENSE.txt (as of this writing, version JULY-31-2007),
  * or <http://www.sourcemod.net/license.php>.
  *
- * Version: 1.0
+ * Version: 1.0.1
  */
 
 static bool:g_bCheckedEngine = false;
@@ -48,6 +48,7 @@ stock static EmitSoundCheckEngineVersion()
 	{
 		g_bNeedsFakePrecache = true;
 	}
+	g_bCheckedEngine = true;
 }
 
 stock static bool:FakePrecacheSoundEx( const String:szPath[] )
