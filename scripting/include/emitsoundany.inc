@@ -66,7 +66,7 @@ stock static bool:FakePrecacheSoundEx( const String:szPath[] )
 	return true;
 }
 
-stock bool:PrecacheSoundAny( const String:szPath[] )
+stock bool:PrecacheSoundAny( const String:szPath[], bool:preload=false)
 {
 	EmitSoundCheckEngineVersion();
 	
@@ -76,7 +76,7 @@ stock bool:PrecacheSoundAny( const String:szPath[] )
 	}
 	else
 	{
-		return PrecacheSound(szPath);
+		return PrecacheSound(szPath, preload);
 	}
 }
 
