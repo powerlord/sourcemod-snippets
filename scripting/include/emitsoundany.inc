@@ -29,8 +29,14 @@
  * exceptions, found in LICENSE.txt (as of this writing, version JULY-31-2007),
  * or <http://www.sourcemod.net/license.php>.
  *
- * Version: 1.0.1
+ * Version: 1.0.2
  */
+#if defined _emitsoundany_included
+ #endinput
+#endif
+#define _emitsoundany_included
+
+#include <sdktools>
 
 static bool:g_bCheckedEngine = false;
 static bool:g_bNeedsFakePrecache = false;
