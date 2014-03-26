@@ -2,7 +2,7 @@
  *                                                                        *
  *                       Colored Chat Functions                           *
  *                   Author: exvel, Editor: Popoklopsi, Powerlord, Bara   *
- *                           Version: 1.2.0	                              *
+ *                           Version: 1.2.1	                              *
  *                                                                        *
  **************************************************************************/
  
@@ -833,7 +833,7 @@ stock CShowActivityEx(client, const String:tag[], const String:format[], any:...
 stock CShowActivity2(client, const String:tag[], const String:format[], any:...)
 {
 	if (sm_show_activity == INVALID_HANDLE)
-	sm_show_activity = FindConVar("sm_show_activity");
+		sm_show_activity = FindConVar("sm_show_activity");
 	
 	decl String:szBuffer[MAX_MESSAGE_LENGTH];
 	//decl String:szCMessage[MAX_MESSAGE_LENGTH];
@@ -856,7 +856,7 @@ stock CShowActivity2(client, const String:tag[], const String:format[], any:...)
 		}
 		
 		SetGlobalTransTarget(client);
-		VFormat(szBuffer, sizeof(szBuffer), format, 3);
+		VFormat(szBuffer, sizeof(szBuffer), format, 4);
 		
 		/* We don't display directly to the console because the chat text 
 		 * simply gets added to the console, so we don't want it to print 
