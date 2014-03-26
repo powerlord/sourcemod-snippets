@@ -746,7 +746,7 @@ stock CShowActivityEx(client, const String:tag[], const String:format[], any:...
 		if (replyto == SM_REPLY_TO_CONSOLE)
 		{
 			SetGlobalTransTarget(client);
-			VFormat(szBuffer, sizeof(szBuffer), format, 3);
+			VFormat(szBuffer, sizeof(szBuffer), format, 4);
 			
 			CRemoveTags(szBuffer, sizeof(szBuffer));
 			PrintToConsole(client, "%s%s\n", tag, szBuffer);
@@ -755,7 +755,7 @@ stock CShowActivityEx(client, const String:tag[], const String:format[], any:...
 	else
 	{
 		SetGlobalTransTarget(LANG_SERVER);
-		VFormat(szBuffer, sizeof(szBuffer), format, 3);
+		VFormat(szBuffer, sizeof(szBuffer), format, 4);
 		
 		CRemoveTags(szBuffer, sizeof(szBuffer));
 		PrintToServer("%s%s\n", tag, szBuffer);
@@ -788,7 +788,7 @@ stock CShowActivityEx(client, const String:tag[], const String:format[], any:...
 				{
 					newsign = name;
 				}
-				VFormat(szBuffer, sizeof(szBuffer), format, 3);
+				VFormat(szBuffer, sizeof(szBuffer), format, 4);
 				
 				CPrintToChatEx(i, client, "%s%s: %s", tag, newsign, szBuffer);
 			}
@@ -807,7 +807,7 @@ stock CShowActivityEx(client, const String:tag[], const String:format[], any:...
 				{
 					newsign = name;
 				}
-				VFormat(szBuffer, sizeof(szBuffer), format, 3);
+				VFormat(szBuffer, sizeof(szBuffer), format, 4);
 				
 				CPrintToChatEx(i, client, "%s%s: %s", tag, newsign, szBuffer);
 			}
@@ -877,7 +877,7 @@ stock CShowActivity2(client, const String:tag[], const String:format[], any:...)
 	else
 	{
 		SetGlobalTransTarget(LANG_SERVER);
-		VFormat(szBuffer, sizeof(szBuffer), format, 3);
+		VFormat(szBuffer, sizeof(szBuffer), format, 4);
 		
 		CRemoveTags(szBuffer, sizeof(szBuffer));
 		PrintToServer("%s%s\n", tag, szBuffer);
@@ -910,7 +910,7 @@ stock CShowActivity2(client, const String:tag[], const String:format[], any:...)
 				{
 					newsign = name;
 				}
-				VFormat(szBuffer, sizeof(szBuffer), format, 3);
+				VFormat(szBuffer, sizeof(szBuffer), format, 4);
 				
 				CPrintToChatEx(i, client, "%s%s: %s", tag, newsign, szBuffer);
 			}
@@ -929,7 +929,7 @@ stock CShowActivity2(client, const String:tag[], const String:format[], any:...)
 				{
 					newsign = name;
 				}
-				VFormat(szBuffer, sizeof(szBuffer), format, 3);
+				VFormat(szBuffer, sizeof(szBuffer), format, 4);
 				
 				CPrintToChatEx(i, client, "%s%s: %s", tag, newsign, szBuffer);
 			}
