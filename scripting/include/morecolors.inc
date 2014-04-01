@@ -380,75 +380,356 @@ stock CReplyToCommandEx(client, author, const String:message[], any:...) {
 }
 
 /**
- * Shows admin activity with colors
- * 
- * @param client		Client performing an action
- * @param message		Message (formatting rules)
+ * Displays usage of an admin command to users depending on the 
+ * setting of the sm_show_activity cvar.  
+ *
+ * This version does not display a message to the originating client 
+ * if used from chat triggers or menus.  If manual replies are used 
+ * for these cases, then this function will suffice.  Otherwise, 
+ * CShowActivity2() is slightly more useful.
+ * Supports color tags.
+ *
+ * @param client		Client index doing the action, or 0 for server.
+ * @param format		Formatting rules.
+ * @param ...			Variable number of format parameters.
  * @noreturn
+ * @error
  */
-stock CShowActivity(client, const String:message[], any:...) {
-	CCheckTrie();
-	if(client < 0 || client > MaxClients) {
-		ThrowError("Invalid client index %d", client);
+stock CShowActivity(client, const String:format[], any:...)
+{
+	if (sm_show_activity == INVALID_HANDLE)
+		sm_show_activity = FindConVar("sm_show_activity");
+		
+	new String:tag[] = "[SM] ";
+	
+	decl String:szBuffer[MAX_MESSAGE_LENGTH];
+	//decl String:szCMessage[MAX_MESSAGE_LENGTH];
+	new value = GetConVarInt(sm_show_activity);
+	new ReplySource:replyto = GetCmdReplySource();
+	
+	new String:name[MAX_NAME_LENGTH] = "Console";
+	new String:sign[MAX_NAME_LENGTH] = "ADMIN";
+	new bool:display_in_chat = false;
+	if (client != 0)
+	{
+		if (client < 0 || client > MaxClients || !IsClientConnected(client))
+			ThrowError("Client index %d is invalid", client);
+		
+		GetClientName(client, name, sizeof(name));
+		new AdminId:id = GetUserAdmin(client);
+		if (id == INVALID_ADMIN_ID
+			|| !GetAdminFlag(id, Admin_Generic, Access_Effective))
+		{
+			sign = "PLAYER";
+		}
+		
+		/* Display the message to the client? */
+		if (replyto == SM_REPLY_TO_CONSOLE)
+		{
+			SetGlobalTransTarget(client);
+			VFormat(szBuffer, sizeof(szBuffer), format, 3);
+			
+			CRemoveTags(szBuffer, sizeof(szBuffer));
+			PrintToConsole(client, "%s%s\n", tag, szBuffer);
+		}
 	}
-	if(client != 0 && !IsClientInGame(client)) {
-		ThrowError("Client %d is not in game", client);
+	else
+	{
+		SetGlobalTransTarget(LANG_SERVER);
+		VFormat(szBuffer, sizeof(szBuffer), format, 3);
+		
+		CRemoveTags(szBuffer, sizeof(szBuffer));
+		PrintToServer("%s%s\n", tag, szBuffer);
 	}
-	decl String:buffer[MAX_BUFFER_LENGTH], String:buffer2[MAX_BUFFER_LENGTH];
-	Format(buffer, sizeof(buffer), "\x01%s", message);
-	VFormat(buffer2, sizeof(buffer2), buffer, 3);
-	CReplaceColorCodes(buffer2);
-	ShowActivity(client, "%s", buffer2);
+	
+	if (!value)
+	{
+		return 1;
+	}
+	
+	for (new i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientInGame(i)
+			|| IsFakeClient(i)
+			|| (display_in_chat && i == client))
+		{
+			continue;
+		}
+		new AdminId:id = GetUserAdmin(i);
+		SetGlobalTransTarget(i);
+		if (id == INVALID_ADMIN_ID
+			|| !GetAdminFlag(id, Admin_Generic, Access_Effective))
+		{
+			/* Treat this as a normal user. */
+			if ((value & 1) | (value & 2))
+			{
+				new String:newsign[MAX_NAME_LENGTH];
+				newsign = sign;
+				if ((value & 2) || (i == client))
+				{
+					newsign = name;
+				}
+				VFormat(szBuffer, sizeof(szBuffer), format, 3);
+				
+				CPrintToChatEx(i, client, "%s%s: %s", tag, newsign, szBuffer);
+			}
+		}
+		else
+		{
+			/* Treat this as an admin user */
+			new bool:is_root = GetAdminFlag(id, Admin_Root, Access_Effective);
+			if ((value & 4)
+				|| (value & 8)
+				|| ((value & 16) && is_root))
+			{
+				new String:newsign[MAX_NAME_LENGTH]
+				newsign = sign;
+				if ((value & 8) || ((value & 16) && is_root) || (i == client))
+				{
+					newsign = name;
+				}
+				VFormat(szBuffer, sizeof(szBuffer), format, 3);
+				
+				CPrintToChatEx(i, client, "%s%s: %s", tag, newsign, szBuffer);
+			}
+		}
+	}
+	
+	return 1;
 }
 
 /**
- * Shows admin activity with colors
- * 
- * @param client		Client performing an action
- * @param tag			Tag to prepend to the message (color tags supported)
- * @param message		Message (formatting rules)
+ * Same as CShowActivity(), except the tag parameter is used instead of "[SM] " (note that you must supply any spacing).
+ * Supports color tags.
+ *
+ * @param client		Client index doing the action, or 0 for server.
+ * @param tags			Tag to display with.
+ * @param format		Formatting rules.
+ * @param ...			Variable number of format parameters.
  * @noreturn
+ * @error
  */
-stock CShowActivityEx(client, const String:tag[], const String:message[], any:...) {
-	CCheckTrie();
-	if(client < 0 || client > MaxClients) {
-		ThrowError("Invalid client index %d", client);
+stock CShowActivityEx(client, const String:tag[], const String:format[], any:...)
+{
+	if (sm_show_activity == INVALID_HANDLE)
+		sm_show_activity = FindConVar("sm_show_activity");
+		
+	decl String:szBuffer[MAX_MESSAGE_LENGTH];
+	//decl String:szCMessage[MAX_MESSAGE_LENGTH];
+	new value = GetConVarInt(sm_show_activity);
+	new ReplySource:replyto = GetCmdReplySource();
+	
+	new String:name[MAX_NAME_LENGTH] = "Console";
+	new String:sign[MAX_NAME_LENGTH] = "ADMIN";
+	new bool:display_in_chat = false;
+	if (client != 0)
+	{
+		if (client < 0 || client > MaxClients || !IsClientConnected(client))
+			ThrowError("Client index %d is invalid", client);
+		
+		GetClientName(client, name, sizeof(name));
+		new AdminId:id = GetUserAdmin(client);
+		if (id == INVALID_ADMIN_ID
+			|| !GetAdminFlag(id, Admin_Generic, Access_Effective))
+		{
+			sign = "PLAYER";
+		}
+		
+		/* Display the message to the client? */
+		if (replyto == SM_REPLY_TO_CONSOLE)
+		{
+			SetGlobalTransTarget(client);
+			VFormat(szBuffer, sizeof(szBuffer), format, 4);
+			
+			CRemoveTags(szBuffer, sizeof(szBuffer));
+			PrintToConsole(client, "%s%s\n", tag, szBuffer);
+		}
 	}
-	if(client != 0 && !IsClientInGame(client)) {
-		ThrowError("Client %d is not in game", client);
+	else
+	{
+		SetGlobalTransTarget(LANG_SERVER);
+		VFormat(szBuffer, sizeof(szBuffer), format, 4);
+		
+		CRemoveTags(szBuffer, sizeof(szBuffer));
+		PrintToServer("%s%s\n", tag, szBuffer);
 	}
-	decl String:buffer[MAX_BUFFER_LENGTH], String:buffer2[MAX_BUFFER_LENGTH];
-	Format(buffer, sizeof(buffer), "\x01%s", message);
-	VFormat(buffer2, sizeof(buffer2), buffer, 4);
-	CReplaceColorCodes(buffer2);
-	strcopy(buffer, sizeof(buffer), tag);
-	CReplaceColorCodes(buffer);
-	ShowActivityEx(client, tag, "%s", buffer2);
+	
+	if (!value)
+	{
+		return 1;
+	}
+	
+	for (new i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientInGame(i)
+			|| IsFakeClient(i)
+			|| (display_in_chat && i == client))
+		{
+			continue;
+		}
+		new AdminId:id = GetUserAdmin(i);
+		SetGlobalTransTarget(i);
+		if (id == INVALID_ADMIN_ID
+			|| !GetAdminFlag(id, Admin_Generic, Access_Effective))
+		{
+			/* Treat this as a normal user. */
+			if ((value & 1) | (value & 2))
+			{
+				new String:newsign[MAX_NAME_LENGTH];
+				newsign = sign;
+				if ((value & 2) || (i == client))
+				{
+					newsign = name;
+				}
+				VFormat(szBuffer, sizeof(szBuffer), format, 4);
+				
+				CPrintToChatEx(i, client, "%s%s: %s", tag, newsign, szBuffer);
+			}
+		}
+		else
+		{
+			/* Treat this as an admin user */
+			new bool:is_root = GetAdminFlag(id, Admin_Root, Access_Effective);
+			if ((value & 4)
+				|| (value & 8)
+				|| ((value & 16) && is_root))
+			{
+				new String:newsign[MAX_NAME_LENGTH];
+				newsign = sign;
+				if ((value & 8) || ((value & 16) && is_root) || (i == client))
+				{
+					newsign = name;
+				}
+				VFormat(szBuffer, sizeof(szBuffer), format, 4);
+				
+				CPrintToChatEx(i, client, "%s%s: %s", tag, newsign, szBuffer);
+			}
+		}
+	}
+	
+	return 1;
 }
 
 /**
- * Shows admin activity with colors
- * 
- * @param client		Client performing an action
- * @param tag			Tag to prepend to the message (color tags supported)
- * @param message		Message (formatting rules)
+ * Displays usage of an admin command to users depending on the setting of the sm_show_activity cvar.
+ * All users receive a message in their chat text, except for the originating client, 
+ * who receives the message based on the current ReplySource.
+ * Supports color tags.
+ *
+ * @param client		Client index doing the action, or 0 for server.
+ * @param tags			Tag to prepend to the message.
+ * @param format		Formatting rules.
+ * @param ...			Variable number of format parameters.
  * @noreturn
+ * @error
  */
-stock CShowActivity2(client, const String:tag[], const String:message[], any:...) {
-	CCheckTrie();
-	if(client < 0 || client > MaxClients) {
-		ThrowError("Invalid client index %d", client);
+stock CShowActivity2(client, const String:tag[], const String:format[], any:...)
+{
+	if (sm_show_activity == INVALID_HANDLE)
+		sm_show_activity = FindConVar("sm_show_activity");
+	
+	decl String:szBuffer[MAX_MESSAGE_LENGTH];
+	//decl String:szCMessage[MAX_MESSAGE_LENGTH];
+	new value = GetConVarInt(sm_show_activity);
+	new ReplySource:replyto = GetCmdReplySource();
+	
+	new String:name[MAX_NAME_LENGTH] = "Console";
+	new String:sign[MAX_NAME_LENGTH] = "ADMIN";
+	if (client != 0)
+	{
+		if (client < 0 || client > MaxClients || !IsClientConnected(client))
+			ThrowError("Client index %d is invalid", client);
+		
+		GetClientName(client, name, sizeof(name));
+		new AdminId:id = GetUserAdmin(client);
+		if (id == INVALID_ADMIN_ID
+		|| !GetAdminFlag(id, Admin_Generic, Access_Effective))
+		{
+			sign = "PLAYER";
+		}
+		
+		SetGlobalTransTarget(client);
+		VFormat(szBuffer, sizeof(szBuffer), format, 4);
+		
+		/* We don't display directly to the console because the chat text 
+		 * simply gets added to the console, so we don't want it to print 
+		 * twice.
+		 */		
+		if (replyto == SM_REPLY_TO_CONSOLE)
+		{
+#if 0
+			PrintToConsole(client, "%s%s\n", tag, szBuffer);
+#endif
+			CPrintToChatEx(client, client, "%s%s", tag, buffer);
+		}
+		else
+		{
+			CPrintToChatEx(client, client, "%s%s", tag, buffer);
+		}			
 	}
-	if(client != 0 && !IsClientInGame(client)) {
-		ThrowError("Client %d is not in game", client);
+	else
+	{
+		SetGlobalTransTarget(LANG_SERVER);
+		VFormat(szBuffer, sizeof(szBuffer), format, 4);
+		
+		CRemoveTags(szBuffer, sizeof(szBuffer));
+		PrintToServer("%s%s\n", tag, szBuffer);
 	}
-	decl String:buffer[MAX_BUFFER_LENGTH], String:buffer2[MAX_BUFFER_LENGTH];
-	Format(buffer, sizeof(buffer), "\x01%s", message);
-	VFormat(buffer2, sizeof(buffer2), buffer, 4);
-	CReplaceColorCodes(buffer2);
-	strcopy(buffer, sizeof(buffer), tag);
-	CReplaceColorCodes(buffer);
-	ShowActivity2(client, buffer, "%s", buffer2);
+	
+	if (!value)
+	{
+		return 1;
+	}
+	
+	for (new i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientInGame(i)
+		|| IsFakeClient(i)
+		|| i == client)
+		{
+			continue;
+		}
+		new AdminId:id = GetUserAdmin(i);
+		SetGlobalTransTarget(i);
+		if (id == INVALID_ADMIN_ID
+		|| !GetAdminFlag(id, Admin_Generic, Access_Effective))
+		{
+			/* Treat this as a normal user. */
+			if ((value & 1) | (value & 2))
+			{
+				new String:newsign[MAX_NAME_LENGTH];
+				newsign = sign;
+				if ((value & 2))
+				{
+					newsign = name;
+				}
+				VFormat(szBuffer, sizeof(szBuffer), format, 4);
+				
+				CPrintToChatEx(i, client, "%s%s: %s", tag, newsign, szBuffer);
+			}
+		}
+		else
+		{
+			/* Treat this as an admin user */
+			new bool:is_root = GetAdminFlag(id, Admin_Root, Access_Effective);
+			if ((value & 4)
+			|| (value & 8)
+			|| ((value & 16) && is_root))
+			{
+				new String:newsign[MAX_NAME_LENGTH];
+				newsign = sign;
+				if ((value & 8) || ((value & 16) && is_root))
+				{
+					newsign = name;
+				}
+				VFormat(szBuffer, sizeof(szBuffer), format, 4);
+				
+				CPrintToChatEx(i, client, "%s%s: %s", tag, newsign, szBuffer);
+			}
+		}
+	}
+	
+	return 1;	
 }
 
 /**
