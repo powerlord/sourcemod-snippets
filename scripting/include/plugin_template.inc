@@ -30,70 +30,80 @@
  *
  * Version: $Id$
  */
-#include <sourcemod>
-#pragma semicolon 1
+#if defined _pluginname_included_
+  #endinput
+#endif
+#define _pluginname_included_
 
-#define VERSION "1.0.0"
+// Plugin 1.0 series
 
-new Handle:g_Cvar_Enabled;
-
-public Plugin:myinfo = {
-	name			= "",
-	author			= "Powerlord",
-	description		= "",
-	version			= VERSION,
-	url				= ""
+enum AppropriateEnum
+{
+	AppropriateEnum_First,		/** Description of first */
+	AppropriateEnum_Second,		/** Description of second */
 };
 
-// Native Support
-/*
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+/**
+ * Called whenever a global forward happens
+ * 
+ */
+forward Plugin_AGlobalForward();
+
+
+/**
+ * Callback for something
+ */
+functag public Plugin_ACallback(const String:param1[]);
+
+/**
+ * Register and unregister said callbacks
+ */
+native Plugin_RegisterCallback(ACallback);
+native Plugin_UnregisterCallback(ACallback);
+
+/**
+ * A function with arg that returns nothing
+ * 
+ * @param param1 	Param to check
+ * @noreturn
+ * @error if it errors sometimes
+ */
+native Plugin_FunctionWithArg(const String:param1[]);
+
+/**
+ * Function without arg
+ * 
+ * @return 		True if it's true. Otherwise false
+ */
+native bool:Plugin_FunctionWithoutArg();
+
+/**
+ * A Common Function for doing something, probably a wrapper for a native
+ *
+ * @noreturn
+ */
+stock Plugin_ACommonFunction()
 {
-	CreateNative("Plugin_FunctionWithArg", Native_FunctionWithArg);
-	CreateNative("Plugin_FunctionWithoutArg", Native_FunctionWithoutArg);
-	CreateNative("Plugin_RegisterCallback", Native_RegisterCallback);
-	CreateNative("Plugin_UnregisterCallback", Native_UnregisterCallback);
-	
-	RegPluginLibrary("pluginname");
-	
-	return APLRes_Success;
-}
-*/
-  
-public OnPluginStart()
-{
-	CreateConVar("_version", VERSION, " version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
-	g_Cvar_Enabled = CreateConVar("_enable", "1", "Enable ?", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
-	
+	// Some code here
 }
 
-/*
-// Natives
-
-// native FunctionWithArg(const String:param1[]);
-public Native_FunctionWithArg(Handle:plugin, numParams)
+public SharedPlugin:__pl_pluginname = 
 {
-	// for const Strings
-	new size;
-	GetNativeStringLength(1, size);
-	decl String:param1[size+1];
-	GetNativeString(1, param1, size+1);
-}
+	name = "pluginname",
+	file = "pluginname.smx",
+#if defined REQUIRE_PLUGIN
+	required = 1,
+#else
+	required = 0,
+#endif
+};
 
-// native bool:FunctionWithoutArg();
-public Native_FunctionWithoutArg(Handle:plugin, numParams)
+#if !defined REQUIRE_PLUGIN
+public __pl_pluginname_SetNTVOptional()
 {
-	return true;
+	MarkNativeAsOptional("FunctionWithArg");
+	MarkNativeAsOptional("FunctionWithoutArg");
+	MarkNativeAsOptional("RegisterCallback");
+	MarkNativeAsOptional("UnregisterCallback");
 }
-
-// native RegisterCallback(ACallback);
-public Native_RegisterCallback(Handle:plugin, numParams)
-{
-}
-	
-// native UnregisterCallback(ACallback);
-public Native_UnregisterCallback(Handle:plugin, numParams)
-{
-}
-*/
-
+#endif
