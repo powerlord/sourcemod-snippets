@@ -9,7 +9,7 @@
 
 #include <regex>
 
-#define MORE_COLORS_VERSION		"1.9.1"
+#define MORE_COLORS_VERSION		"1.9.1pl"
 #define MAX_MESSAGE_LENGTH		256
 #define MAX_BUFFER_LENGTH		(MAX_MESSAGE_LENGTH * 4)
 
