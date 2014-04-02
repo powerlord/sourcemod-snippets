@@ -24,6 +24,8 @@ new bool:CSkipList[MAXPLAYERS + 1];
 new Handle:CTrie;
 new CTeamColors[][] = {{0xCCCCCC, 0x4D7942, 0xFF4040}}; // Multi-dimensional array for games that don't support SayText2. First index is the game index (as defined by the GAME_ defines), second index is team. 0 = spectator, 1 = team1, 2 = team2
 
+static Handle:sm_show_activity = INVALID_HANDLE;
+
 /**
  * Prints a message to a specific client in the chat area.
  * Supports color tags.

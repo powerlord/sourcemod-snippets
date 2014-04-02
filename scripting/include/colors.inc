@@ -47,7 +47,7 @@ new bool:CProfile_Colors[] = {true, false, true, false, false, false, false, fal
 new CProfile_TeamIndex[] = {NO_INDEX, NO_INDEX, NO_INDEX, NO_INDEX, NO_INDEX, NO_INDEX, NO_INDEX, NO_INDEX, NO_INDEX, NO_INDEX};
 new bool:CProfile_SayText2 = false;
 
-new Handle:sm_show_activity = INVALID_HANDLE;
+static Handle:sm_show_activity = INVALID_HANDLE;
 
 /**
  * Prints a message to a specific client in the chat area.
