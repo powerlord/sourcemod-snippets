@@ -52,9 +52,9 @@ public OnPluginStart()
 	CreateConVar("colorstester_version", VERSION, "Colors Tester version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
 	//g_Cvar_Enabled = CreateConVar("colorstester_enable", "1", "Enable ?", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 	
-	RegConsoleCmd("showactivity", Cmd_ShowActivity, "Test CShowActivity");
-	RegConsoleCmd("showactivityex", Cmd_ShowActivityEx, "Test CShowActivity");
-	RegConsoleCmd("showactivity2", Cmd_ShowActivity2, "Test CShowActivityEx");
+	RegAdminCmd("showactivity", Cmd_ShowActivity, ADMFLAG_GENERIC, "Test CShowActivity");
+	RegAdminCmd("showactivityex", Cmd_ShowActivityEx, ADMFLAG_GENERIC, "Test CShowActivity");
+	RegAdminCmd("showactivity2", Cmd_ShowActivity2, ADMFLAG_GENERIC, "Test CShowActivityEx");
 }
 
 public Action:Cmd_ShowActivity(client, args)
