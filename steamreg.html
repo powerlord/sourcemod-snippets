@@ -5,7 +5,7 @@
 
 <body>
 <p>Register a Steam server account</p>
-<p>Although there are entries on this list for games other than Team Fortress 2, none of them have server support for these IDs yet.</p>
+<p>Although there are entries for Left 4 Dead 2 and Counter-Strike: Global Offensive, these games do not yet support sv_setsteamaccount.</p>
 
 <form action="https://api.steampowered.com/IGameServersService/CreateAccount/v0001/" method="POST">
 <p>Game: <select name="appid">
@@ -19,6 +19,16 @@
 <p><a target="_blank" href="http://steamcommunity.com/dev">API Key</a>: <input name="key" type="text" size="100" /></p>
 <p><input type="submit" /><input type="reset" /></p>
 </form>
+
+<h2>Usage instructions:</h2>
+
+<p>If your API key was valid, you will get back a JSON response that contains a login_token. <strong>Each server your own needs its own login_token.</strong>  I will refer to the value of the login token as <em>login_tokenvalue</em></p>
+
+<p>For Team Fortress 2, Counter-Strike: Source, Day of Defeat: Source, and Half-Life 2: Deathmatch: Add <code>sv_setsteamaccount <em>login_tokenvalue</em></code> to your autoexec.cfg or some other config file that runs on server startup, or <code>+sv_setsteamaccount <em>login_tokenvalue</em></code> to your startup line.  <strong>Adding this to server.cfg does not work as it executes too late.</strong></p>
+
+<p>For other Source games, you can use SourceMod <a target="_blank" href="https://forums.alliedmods.net/showthread.php?t=237481">Set Game Server Account plugin</a> (opens in new window).  Note that it depends on the SteamWorks extension, which must also be installed.  Once the plugin is installed, put your <em>login_tokenvalue</em> into the addons/sourcemod/configs/gameserveraccount_token.txt file.</p>
+
+<p>As far as I know, there are no AMXModX plugins to get this working with GoldSrc games.</p>
 
 </body>
 
