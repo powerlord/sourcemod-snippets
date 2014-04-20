@@ -1,0 +1,19 @@
+<html>
+<head>
+<title>Register a Steam server account</title>
+</head>
+
+<body>
+<p>Register a Steam server account</p>
+
+<form action="https://api.steampowered.com/IGameServersService/CreateAccount/v0001/" method="POST">
+<p>Game: <select name="appid">
+<option value="440" selected="selected">Team Fortress 2</option>
+</select></p>
+<p><a target="_blank" href="http://steamcommunity.com/dev">API Key</a>: <input name="key" type="text" size="100" /></p>
+<p><input type="submit" /><input type="reset" /></p>
+</form>
+
+</body>
+
+</html>
