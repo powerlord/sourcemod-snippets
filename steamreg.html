@@ -5,10 +5,16 @@
 
 <body>
 <p>Register a Steam server account</p>
+<p>Although there are entries on this list for games other than Team Fortress 2, none of them have server support for these IDs yet.</p>
 
 <form action="https://api.steampowered.com/IGameServersService/CreateAccount/v0001/" method="POST">
 <p>Game: <select name="appid">
 <option value="440" selected="selected">Team Fortress 2</option>
+<option value="240">Counter-Strike: Source</option>
+<option value="300">Day of Defeat: Source</option>
+<option value="320">Half-Life 2: Deathmatch</option>
+<option value="550">Left 4 Dead 2</option>
+<option value="730">Counter-Strike: Global Offensive</option>
 </select></p>
 <p><a target="_blank" href="http://steamcommunity.com/dev">API Key</a>: <input name="key" type="text" size="100" /></p>
 <p><input type="submit" /><input type="reset" /></p>
