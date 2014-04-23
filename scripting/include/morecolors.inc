@@ -662,11 +662,11 @@ stock CShowActivity2(client, const String:tag[], const String:format[], any:...)
 #if 0
 			PrintToConsole(client, "%s%s\n", tag, szBuffer);
 #endif
-			CPrintToChatEx(client, client, "%s%s", tag, buffer);
+			CPrintToChatEx(client, client, "%s%s", tag, szBuffer);
 		}
 		else
 		{
-			CPrintToChatEx(client, client, "%s%s", tag, buffer);
+			CPrintToChatEx(client, client, "%s%s", tag, szBuffer);
 		}			
 	}
 	else

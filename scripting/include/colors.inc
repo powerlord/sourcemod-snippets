@@ -2,7 +2,7 @@
  *                                                                        *
  *                       Colored Chat Functions                           *
  *                   Author: exvel, Editor: Popoklopsi, Powerlord, Bara   *
- *                           Version: 1.2.1	                              *
+ *                           Version: 1.2.2                               *
  *                                                                        *
  **************************************************************************/
  
@@ -867,11 +867,11 @@ stock CShowActivity2(client, const String:tag[], const String:format[], any:...)
 #if 0
 			PrintToConsole(client, "%s%s\n", tag, szBuffer);
 #endif
-			CPrintToChatEx(client, client, "%s%s", tag, buffer);
+			CPrintToChatEx(client, client, "%s%s", tag, szBuffer);
 		}
 		else
 		{
-			CPrintToChatEx(client, client, "%s%s", tag, buffer);
+			CPrintToChatEx(client, client, "%s%s", tag, szBuffer);
 		}			
 	}
 	else

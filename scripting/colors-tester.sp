@@ -53,8 +53,8 @@ public OnPluginStart()
 	//g_Cvar_Enabled = CreateConVar("colorstester_enable", "1", "Enable ?", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 	
 	RegAdminCmd("showactivity", Cmd_ShowActivity, ADMFLAG_GENERIC, "Test CShowActivity");
-	RegAdminCmd("showactivityex", Cmd_ShowActivityEx, ADMFLAG_GENERIC, "Test CShowActivity");
-	RegAdminCmd("showactivity2", Cmd_ShowActivity2, ADMFLAG_GENERIC, "Test CShowActivityEx");
+	RegAdminCmd("showactivityex", Cmd_ShowActivityEx, ADMFLAG_GENERIC, "Test CShowActivityEx");
+	RegAdminCmd("showactivity2", Cmd_ShowActivity2, ADMFLAG_GENERIC, "Test CShowActivity2");
 }
 
 public Action:Cmd_ShowActivity(client, args)
@@ -69,5 +69,5 @@ public Action:Cmd_ShowActivityEx(client, args)
 
 public Action:Cmd_ShowActivity2(client, args)
 {
-	CShowActivity(client, TAG, "Tested {teamcolor}CShowActivity2");
+	CShowActivity2(client, TAG, "Tested {teamcolor}CShowActivity2");
 }
