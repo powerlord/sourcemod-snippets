@@ -1,0 +1,15 @@
+"Games"
+{
+	"tf"
+	{
+		"Signatures"
+		{
+			"CTFPlayer::ForceChangeTeam"
+			{
+				"windows"	""
+				"linux"		"@_ZN9CTFPlayer15ForceChangeTeamEib"
+				"mac"		"@_ZN9CTFPlayer15ForceChangeTeamEib"
+			}
+		}
+	}
+}
