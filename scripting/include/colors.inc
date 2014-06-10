@@ -2,7 +2,7 @@
  *                                                                        *
  *                       Colored Chat Functions                           *
  *                   Author: exvel, Editor: Popoklopsi, Powerlord, Bara   *
- *                           Version: 1.2.2                               *
+ *                           Version: 1.2.3                               *
  *                                                                        *
  **************************************************************************/
  
@@ -638,6 +638,7 @@ stock CShowActivity(client, const String:format[], any:...)
 			
 			CRemoveTags(szBuffer, sizeof(szBuffer));
 			PrintToConsole(client, "%s%s\n", tag, szBuffer);
+			display_in_chat = true;
 		}
 	}
 	else
@@ -750,6 +751,7 @@ stock CShowActivityEx(client, const String:tag[], const String:format[], any:...
 			
 			CRemoveTags(szBuffer, sizeof(szBuffer));
 			PrintToConsole(client, "%s%s\n", tag, szBuffer);
+			display_in_chat = true;
 		}
 	}
 	else
@@ -862,17 +864,7 @@ stock CShowActivity2(client, const String:tag[], const String:format[], any:...)
 		 * simply gets added to the console, so we don't want it to print 
 		 * twice.
 		 */		
-		if (replyto == SM_REPLY_TO_CONSOLE)
-		{
-#if 0
-			PrintToConsole(client, "%s%s\n", tag, szBuffer);
-#endif
-			CPrintToChatEx(client, client, "%s%s", tag, szBuffer);
-		}
-		else
-		{
-			CPrintToChatEx(client, client, "%s%s", tag, szBuffer);
-		}			
+		CPrintToChatEx(client, client, "%s%s", tag, szBuffer);
 	}
 	else
 	{
