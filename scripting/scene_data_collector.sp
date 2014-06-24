@@ -77,7 +77,7 @@ public OnSceneSpawned(entity)
 		Format(sTargetString, sizeof(sTargetString), "m_iszTarget%d", i+1);
 		Format(hTargetString, sizeof(hTargetString), "m_hTarget%d", i+1);
 		GetEntPropString(entity, Prop_Data, sTargetString, sTargets[i], sizeof(sTargets[]));
-		targets[i] = GetEntPropEnt(entity, Prop_Send, hTargetString);
+		targets[i] = GetEntPropEnt(entity, Prop_Data, hTargetString);
 	}
 	
 	LogToFile(LOGFILE, "%s spawned. file: %s, resumfile: %s, target1: %s (%d), target2: %s (%d), target3: %s (%d), target4: %s (%d), target5: %s (%d), target6: %s (%d), target7: %s (%d), target8: %s (%d)",
