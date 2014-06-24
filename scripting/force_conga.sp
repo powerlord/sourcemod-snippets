@@ -46,7 +46,9 @@ public Plugin:myinfo = {
 
 // PLUGIN WILL NOT WORK UNTIL THIS ARRAY IS FILLED (except position 0)
 // Unknown, Scout, Sniper, Soldier, DemoMan, Medic, Heavy, Pyro, Spy, Engineer
-new String:CongaVCDs[TFClassType][PLATFORM_MAX_PATH] = { "", "", "", "", "", "", "", "", "", "" };
+new String:classNames[][] = { "", "scout", "sniper", "soldier", "demoman", "medic", "heavy", "pyro", "spy", "engineer" };
+
+new String:congaPattern[] = "scenes\\player\\%s\\low\\conga.vcd";
 
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 {
@@ -123,18 +125,22 @@ CongaAnimation(client)
 {
 	new entity = CreateEntityByName("instanced_scripted_scene");
 	
-	new TFClassType:class = TF2_GetPlayerClass(client);
+	new class = _:TF2_GetPlayerClass(client);
+
+	new String:vcd[PLATFORM_MAX_PATH];
+	
+	Format(vcd, sizeof(vcd), congaPattern, classNames[class]);
 	
 	if (!IsValidEntity(entity))
 	{
 		return;
 	}
 	
-	DispatchKeyValue(entity, "SceneFile", CongaVCDs[class]);
+	DispatchKeyValue(entity, "SceneFile", vcd);
 	DispatchSpawn(entity);
 	SetEntPropEnt(entity, Prop_Data, "m_hOwner", client);
 	SetEntProp(entity, Prop_Data, "m_bHadOwner", true);
-	SetEntPropString(entity, Prop_Data, "m_szInstanceFilename", CongaVCDs[class]);
+	SetEntPropString(entity, Prop_Data, "m_szInstanceFilename", vcd);
 
 	// Make it kill itself on cancellation or completion (not sure which fires)
 	SetVariantString("OnCanceled !self:Kill:0:0:-1");
