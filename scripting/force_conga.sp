@@ -73,6 +73,7 @@ public Action:Cmd_Conga(client, args)
 	if (args == 0)
 	{
 		ReplyToCommand(client, "Usage: /conga <target>");
+		return Plugin_Handled;
 	}
 	
 	decl String:target[64];
