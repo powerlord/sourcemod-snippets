@@ -35,7 +35,7 @@
 #include <sdktools>
 #pragma semicolon 1
 
-#define VERSION "1.0.0"
+#define VERSION "1.0.1"
 
 #define LOGFILE "scenes.txt"
 public Plugin:myinfo = {
@@ -53,15 +53,26 @@ public OnPluginStart()
 
 public OnEntityCreated(entity, const String:classname[])
 {
-	if (StrEqual(classname, "instanced_scripted_scene") || StrEqual(classname, "logic_choreographed_scene") || StrEqual(classname, "scripted_scene"))
+	if (StrEqual(classname, "instanced_scripted_scene"))
 	{
-		SDKHook(entity, SDKHook_SpawnPost, OnSceneSpawned);
+		HookSingleEntityOutput(entity, "OnStart", InstanceOnStart);
+	}
+	else
+	if (StrEqual(classname, "logic_choreographed_scene") || StrEqual(classname, "scripted_scene"))
+	{
+		HookSingleEntityOutput(entity, "OnStart", OnStart);
 	}
 }
 
-public OnSceneSpawned(entity)
+public InstanceOnStart(const String:output[], caller, activator, Float:delay)
 {
-	HookSingleEntityOutput(entity, "OnStart", OnStart);
+	OnStart(output, caller, activator, delay);
+	
+	new String:sInstanceFile[PLATFORM_MAX_PATH];
+	
+	GetEntPropString(caller, Prop_Data, "m_szInstanceFilename", sInstanceFile, sizeof(sInstanceFile));
+	
+	LogToFile(LOGFILE, "owner: %d, instancefile: %s, isBackground: %d", GetEntPropEnt(caller, Prop_Data, "m_hOwner"), sInstanceFile, GetEntProp(caller, Prop_Data, "m_bIsBackground"));
 }
 
 public OnStart(const String:output[], caller, activator, Float:delay)
@@ -86,8 +97,8 @@ public OnStart(const String:output[], caller, activator, Float:delay)
 		targets[i] = GetEntPropEnt(caller, Prop_Data, hTargetString);
 	}
 	
-	LogToFile(LOGFILE, "%s spawned. file: %s, resumfile: %s, target1: %s (%d), target2: %s (%d), target3: %s (%d), target4: %s (%d), target5: %s (%d), target6: %s (%d), target7: %s (%d), target8: %s (%d)",
-		classname, sSceneFile, sResumeSceneFile, sTargets[0], targets[0], sTargets[1], targets[1], sTargets[2], targets[2], sTargets[3], targets[3], sTargets[4], targets[4],
+	LogToFile(LOGFILE, "%s started. file: %s, resumefile: %s, busyactor: %d, target1: %s (%d), target2: %s (%d), target3: %s (%d), target4: %s (%d), target5: %s (%d), target6: %s (%d), target7: %s (%d), target8: %s (%d)",
+		classname, sSceneFile, sResumeSceneFile, GetEntProp(caller, Prop_Data, "m_BusyActor"), sTargets[0], targets[0], sTargets[1], targets[1], sTargets[2], targets[2], sTargets[3], targets[3], sTargets[4], targets[4],
 		sTargets[5], targets[5], sTargets[6], targets[6], sTargets[7], targets[7]);
 		
 	for (new i = 0; i < sizeof(targets); i++)
