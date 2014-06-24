@@ -86,7 +86,7 @@ public OnSceneSpawned(entity)
 		
 	for (new i = 0; i < sizeof(targets); i++)
 	{
-		if (targets[i] > 0)
+		if (targets[i] > 0 && targets[i] <= MaxClients)
 		{
 			LogToFile(LOGFILE, "target%d is %L", i, targets[i]);
 		}
