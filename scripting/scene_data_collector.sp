@@ -83,4 +83,12 @@ public OnSceneSpawned(entity)
 	LogToFile(LOGFILE, "%s spawned. file: %s, resumfile: %s, target1: %s (%d), target2: %s (%d), target3: %s (%d), target4: %s (%d), target5: %s (%d), target6: %s (%d), target7: %s (%d), target8: %s (%d)",
 		classname, sSceneFile, sResumeSceneFile, sTargets[0], targets[0], sTargets[1], targets[1], sTargets[2], targets[2], sTargets[3], targets[3], sTargets[4], targets[4],
 		sTargets[5], targets[5], sTargets[6], targets[6], sTargets[7], targets[7]);
+		
+	for (new i = 0; i < sizeof(targets); i++)
+	{
+		if (targets[i] > 0)
+		{
+			LogToFile(LOGFILE, "target%d is %L", i, targets[i]);
+		}
+	}
 }
