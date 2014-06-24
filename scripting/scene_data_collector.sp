@@ -32,6 +32,7 @@
  */
 #include <sourcemod>
 #include <sdkhooks>
+#include <sdktools>
 #pragma semicolon 1
 
 #define VERSION "1.0.0"
@@ -60,24 +61,29 @@ public OnEntityCreated(entity, const String:classname[])
 
 public OnSceneSpawned(entity)
 {
+	HookSingleEntityOutput(entity, "OnStart", OnStart);
+}
+
+public OnStart(const String:output[], caller, activator, Float:delay)
+{
 	decl String:classname[64];
 	new String:sSceneFile[PLATFORM_MAX_PATH];
 	new String:sResumeSceneFile[PLATFORM_MAX_PATH];
 	new String:sTargets[8][64];
 	new targets[8];
 	
-	GetEntityClassname(entity, classname, sizeof(classname));
+	GetEntityClassname(caller, classname, sizeof(classname));
 	
-	GetEntPropString(entity, Prop_Data, "m_iszSceneFile", sSceneFile, sizeof(sSceneFile));
-	GetEntPropString(entity, Prop_Data, "m_iszResumeSceneFile", sResumeSceneFile, sizeof(sResumeSceneFile));
+	GetEntPropString(caller, Prop_Data, "m_iszSceneFile", sSceneFile, sizeof(sSceneFile));
+	GetEntPropString(caller, Prop_Data, "m_iszResumeSceneFile", sResumeSceneFile, sizeof(sResumeSceneFile));
 	for (new i = 0; i < sizeof(sTargets); i++)
 	{
 		decl String:sTargetString[13];
 		decl String:hTargetString[11];
 		Format(sTargetString, sizeof(sTargetString), "m_iszTarget%d", i+1);
 		Format(hTargetString, sizeof(hTargetString), "m_hTarget%d", i+1);
-		GetEntPropString(entity, Prop_Data, sTargetString, sTargets[i], sizeof(sTargets[]));
-		targets[i] = GetEntPropEnt(entity, Prop_Data, hTargetString);
+		GetEntPropString(caller, Prop_Data, sTargetString, sTargets[i], sizeof(sTargets[]));
+		targets[i] = GetEntPropEnt(caller, Prop_Data, hTargetString);
 	}
 	
 	LogToFile(LOGFILE, "%s spawned. file: %s, resumfile: %s, target1: %s (%d), target2: %s (%d), target3: %s (%d), target4: %s (%d), target5: %s (%d), target6: %s (%d), target7: %s (%d), target8: %s (%d)",
