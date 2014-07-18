@@ -29,7 +29,7 @@
  * exceptions, found in LICENSE.txt (as of this writing, version JULY-31-2007),
  * or <http://www.sourcemod.net/license.php>.
  *
- * Version: 1.0.2
+ * Version: 1.0.3
  */
 #if defined _emitsoundany_included
  #endinput
@@ -189,4 +189,22 @@ stock EmitAmbientSoundAny(const String:name[],
 	}
 	
 	EmitAmbientSound(szSound, pos, entity, level, flags, vol, pitch, delay);
+}
+
+stock StopSoundAny(entity, channel, const String:name[])
+{
+	EmitSoundCheckEngineVersion();
+	
+	decl String:szSound[PLATFORM_MAX_PATH];
+	
+	if (g_bNeedsFakePrecache)
+	{
+		Format(szSound, sizeof(szSound), "*%s", name);
+	}
+	else
+	{
+		strcopy(szSound, sizeof(szSound), name);
+	}
+	
+	StopSound(entity, channel, szSound);
 }
