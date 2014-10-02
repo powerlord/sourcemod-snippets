@@ -53,6 +53,8 @@ public OnPluginStart()
 	RegConsoleCmd("menu4", Cmd_Menu4, "Test a Handle for a menuex.");
 	RegConsoleCmd("menu5", Cmd_Menu5, "Test a value for a menuex.");
 	RegConsoleCmd("menu6", Cmd_Menu6, "Test a datamenuex.");
+	RegConsoleCmd("vote1", Cmd_Vote1, "Test a datamenu vote.");
+	RegConsoleCmd("vote2", Cmd_Vote2, "Test a value for a vote.");
 }
 
 public Action Cmd_Menu1(int client, int args)
@@ -142,16 +144,32 @@ public Action Cmd_Menu6(int client, int args)
 public Action Cmd_Vote1(int client, int args)
 {
 	Handle pack;
-	Menu menu = CreateDataMenu(HandleCallback, MENU_ACTIONS_DEFAULT, pack);
-	
-	WritePackString(pack, "Breakfast sandwich");
-	WritePackCell(pack, 47);
+	Menu menu = CreateDataMenu(HandleCallback, MENU_ACTIONS_DEFAULT|MenuAction_VoteCancel, pack);
+	WritePackString(pack, "Hope's Peak");
+	WritePackCell(pack, 999);
 	ResetPack(pack);
 	
-	menu.SetTitle("Test DataMenu DataPack.");
+	menu.SetTitle("Test DataMenu Vote.");
+	menu.SetVoteResultCallback(AdvVoteHandlerHandle);
 	menu.AddItem("#test", "Test");
-	menu.Display(client, MENU_TIME_FOREVER);
+	menu.AddItem("#test2", "Test 2");
 
+	menu.DisplayVoteToAll(20);
+	
+	return Plugin_Handled;
+}
+
+public Action Cmd_Vote2(int client, int args)
+{
+	Menu menu = CreateMenu(ValueCallback, MENU_ACTIONS_DEFAULT|MenuAction_VoteCancel, -1);
+	
+	menu.SetTitle("Test Menu Vote.");
+	menu.SetVoteResultCallback(AdvVoteHandlerData);
+	menu.AddItem("#test", "Test");
+	menu.AddItem("#test2", "Test 2");
+
+	menu.DisplayVoteToAll(20);
+	
 	return Plugin_Handled;
 }
 
@@ -163,7 +181,7 @@ public int HandleCallback(Menu menu, MenuAction action, int param1, int param2, 
 		{
 			char iteminfo[64];
 			menu.GetItem(param2, iteminfo, sizeof(iteminfo));
-			if (StrEqual(iteminfo, "#test"))
+			if (StrEqual(iteminfo, "#test") || StrEqual(iteminfo, "#test2"))
 			{
 				char first[64];
 				ReadPackString(hndl, first, sizeof(first));
@@ -176,6 +194,14 @@ public int HandleCallback(Menu menu, MenuAction action, int param1, int param2, 
 		{
 			delete menu;
 		}
+		
+		case MenuAction_VoteCancel:
+		{
+			if (param1 == VoteCancel_NoVotes)
+			{
+				PrintToChatAll("Vote had no votes.");
+			}
+		}
 	}
 }
 
@@ -187,7 +213,7 @@ public int ValueCallback(Menu menu, MenuAction action, int param1, int param2, a
 		{
 			char iteminfo[64];
 			menu.GetItem(param2, iteminfo, sizeof(iteminfo));
-			if (StrEqual(iteminfo, "#test"))
+			if (StrEqual(iteminfo, "#test") || StrEqual(iteminfo, "#test2"))
 			{
 				PrintToChat(param1, "Menu returned: %d", data);
 			}
@@ -196,6 +222,14 @@ public int ValueCallback(Menu menu, MenuAction action, int param1, int param2, a
 		case MenuAction_End:
 		{
 			delete menu;
+		}
+
+		case MenuAction_VoteCancel:
+		{
+			if (param1 == VoteCancel_NoVotes)
+			{
+				PrintToChatAll("Vote had no votes.");
+			}
 		}
 	}
 }
@@ -209,7 +243,13 @@ public AdvVoteHandlerHandle (Menu menu,
 	  Handle hndl
 	)
 {
+	char winner[64];
+	menu.GetItem(item_info[0][VOTEINFO_ITEM_INDEX], "", 0, _, winner, sizeof(winner));
 	
+	char text[64];
+	ReadPackString(hndl, text, sizeof(text));
+	int num = ReadPackCell(hndl);
+	PrintToChatAll("Vote Ended. %d users voted. %s won with %d votes. data was: %s, %d", num_votes, winner, item_info[0][VOTEINFO_ITEM_VOTES], text, num);
 }
 	
 public AdvVoteHandlerData (Menu menu,
@@ -221,5 +261,7 @@ public AdvVoteHandlerData (Menu menu,
 	  any data
 	)
 {
-	
+	char winner[64];
+	menu.GetItem(item_info[0][VOTEINFO_ITEM_INDEX], "", 0, _, winner, sizeof(winner));
+	PrintToChatAll("Vote Ended. %d users voted. %s won with %d votes. data was: %d", num_votes, winner, item_info[0][VOTEINFO_ITEM_VOTES], data);
 }
