@@ -50,7 +50,7 @@ public OnPluginStart()
 	RegConsoleCmd("menu1", Cmd_Menu1, "Test a Handle for a menu.");
 	RegConsoleCmd("menu2", Cmd_Menu2, "Test a value for a menu.");
 	RegConsoleCmd("menu3", Cmd_Menu3, "Test a datamenu.");
-	RegConsoleCmd("menu4", Cmd_Menu1, "Test a Handle for a menuex.");
+	RegConsoleCmd("menu4", Cmd_Menu4, "Test a Handle for a menuex.");
 	RegConsoleCmd("menu5", Cmd_Menu5, "Test a value for a menuex.");
 	RegConsoleCmd("menu6", Cmd_Menu6, "Test a datamenuex.");
 }
@@ -104,7 +104,7 @@ public Action Cmd_Menu4(int client, int args)
 	WritePackCell(pack, 1024);
 	ResetPack(pack);
 	
-	Menu menu = CreateMenuEx(GetMenuStyleHandle(MenuStyle_Valve), HandleCallback, MENU_ACTIONS_DEFAULT, pack);
+	Menu menu = CreateMenuEx(GetMenuStyleHandle(MenuStyle_Radio), HandleCallback, MENU_ACTIONS_DEFAULT, pack);
 	menu.SetCloseHandle(true);
 	menu.SetTitle("Test MenuEx DataPack.");
 	menu.AddItem("#test", "Test");
@@ -115,7 +115,7 @@ public Action Cmd_Menu4(int client, int args)
 
 public Action Cmd_Menu5(int client, int args)
 {
-	Menu menu = CreateMenuEx(GetMenuStyleHandle(MenuStyle_Valve), ValueCallback, MENU_ACTIONS_DEFAULT, 13);
+	Menu menu = CreateMenuEx(GetMenuStyleHandle(MenuStyle_Radio), ValueCallback, MENU_ACTIONS_DEFAULT, 13);
 	menu.SetTitle("Test MenuEx any data.");
 	menu.AddItem("#test", "Test");
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
@@ -126,7 +126,7 @@ public Action Cmd_Menu5(int client, int args)
 public Action Cmd_Menu6(int client, int args)
 {
 	Handle pack;
-	Menu menu = CreateDataMenuEx(GetMenuStyleHandle(MenuStyle_Valve), HandleCallback, MENU_ACTIONS_DEFAULT, pack);
+	Menu menu = CreateDataMenuEx(GetMenuStyleHandle(MenuStyle_Radio), HandleCallback, MENU_ACTIONS_DEFAULT, pack);
 	
 	WritePackString(pack, "Soda Popinski");
 	WritePackCell(pack, 104);
