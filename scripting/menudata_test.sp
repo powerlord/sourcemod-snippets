@@ -139,6 +139,22 @@ public Action Cmd_Menu6(int client, int args)
 	return Plugin_Handled;
 }
 
+public Action Cmd_Vote1(int client, int args)
+{
+	Handle pack;
+	Menu menu = CreateDataMenu(HandleCallback, MENU_ACTIONS_DEFAULT, pack);
+	
+	WritePackString(pack, "Breakfast sandwich");
+	WritePackCell(pack, 47);
+	ResetPack(pack);
+	
+	menu.SetTitle("Test DataMenu DataPack.");
+	menu.AddItem("#test", "Test");
+	menu.Display(client, MENU_TIME_FOREVER);
+
+	return Plugin_Handled;
+}
+
 public int HandleCallback(Menu menu, MenuAction action, int param1, int param2, Handle hndl)
 {
 	switch(action)
@@ -182,4 +198,28 @@ public int ValueCallback(Menu menu, MenuAction action, int param1, int param2, a
 			delete menu;
 		}
 	}
+}
+
+public AdvVoteHandlerHandle (Menu menu,
+	  int num_votes, 
+	  int num_clients,
+	  const int client_info[][2], 
+	  int num_items,
+	  const int item_info[][2],
+	  Handle hndl
+	)
+{
+	
+}
+	
+public AdvVoteHandlerData (Menu menu,
+	  int num_votes, 
+	  int num_clients,
+	  const int client_info[][2], 
+	  int num_items,
+	  const int item_info[][2],
+	  any data
+	)
+{
+	
 }
