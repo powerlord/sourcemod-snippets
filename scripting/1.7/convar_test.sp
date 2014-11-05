@@ -76,22 +76,22 @@ public OnPluginStart()
 	
 	RegAdminCmd("cvarflags", Cmd_Flags, ADMFLAG_GENERIC, "Change convar_test_enable flags (add/remove FCVAR_NOTIFY)");
 
-	g_Cvar_String.HookChange(Cvar_Changed);
-	g_Cvar_Float.HookChange(Cvar_Changed);
-	g_Cvar_Bool.HookChange(Cvar_Changed);
-	g_Cvar_Int.HookChange(Cvar_Changed);
+	g_Cvar_String.AddChangeHook(Cvar_Changed);
+	g_Cvar_Float.AddChangeHook(Cvar_Changed);
+	g_Cvar_Bool.AddChangeHook(Cvar_Changed);
+	g_Cvar_Int.AddChangeHook(Cvar_Changed);
 	
-	g_Cvar_Enabled.HookChange(Cvar_OldChanged);
+	g_Cvar_Enabled.AddChangeHook(Cvar_OldChanged);
 }
 
 public OnPluginEnd()
 {
-	g_Cvar_String.UnhookChange(Cvar_Changed);
-	g_Cvar_Float.UnhookChange(Cvar_Changed);
-	g_Cvar_Bool.UnhookChange(Cvar_Changed);
-	g_Cvar_Int.UnhookChange(Cvar_Changed);
+	g_Cvar_String.RemoveChangeHook(Cvar_Changed);
+	g_Cvar_Float.RemoveChangeHook(Cvar_Changed);
+	g_Cvar_Bool.RemoveChangeHook(Cvar_Changed);
+	g_Cvar_Int.RemoveChangeHook(Cvar_Changed);
 
-	g_Cvar_Enabled.UnhookChange(Cvar_OldChanged);
+	g_Cvar_Enabled.RemoveChangeHook(Cvar_OldChanged);
 }
 
 public Action:Cmd_Reset(client, args)
@@ -105,7 +105,7 @@ public Action:Cmd_Reset(client, args)
 	char myName[64];
 	g_Cvar_Float.GetName(myName, sizeof(myName));
 	
-	g_Cvar_Float.Reset();
+	g_Cvar_Float.RestoreDefaultValue();
 	
 	ReplyToCommand(client, "Reset %s to default value.", myName);
 	return Plugin_Handled;
@@ -160,7 +160,7 @@ public Action:Cmd_String(client, args)
 	g_Cvar_String.GetString(myValue, sizeof(myValue));
 	
 	char defaultValue[64];
-	g_Cvar_String.GetDefault(defaultValue, sizeof(defaultValue));
+	g_Cvar_String.GetDefaultValue(defaultValue, sizeof(defaultValue));
 	
 	int flags = g_Cvar_String.GetFlags();
 	
@@ -188,7 +188,7 @@ public Action:Cmd_Float(client, args)
 	boundsSet[1] = g_Cvar_Float.GetBounds(ConVarBound_Upper, bounds[1]);
 	
 	char defaultValue[64];
-	g_Cvar_Float.GetDefault(defaultValue, sizeof(defaultValue));
+	g_Cvar_Float.GetDefaultValue(defaultValue, sizeof(defaultValue));
 	
 	int flags = g_Cvar_Float.GetFlags();
 	
@@ -216,7 +216,7 @@ public Action:Cmd_Bool(client, args)
 	boundsSet[1] = g_Cvar_Bool.GetBounds(ConVarBound_Upper, bounds[1]);
 	
 	char defaultValue[64];
-	g_Cvar_Bool.GetDefault(defaultValue, sizeof(defaultValue));
+	g_Cvar_Bool.GetDefaultValue(defaultValue, sizeof(defaultValue));
 	
 	int flags = g_Cvar_Bool.GetFlags();
 	
@@ -244,7 +244,7 @@ public Action:Cmd_Int(client, args)
 	boundsSet[1] = g_Cvar_Int.GetBounds(ConVarBound_Upper, bounds[1]);
 	
 	char defaultValue[64];
-	g_Cvar_Int.GetDefault(defaultValue, sizeof(defaultValue));
+	g_Cvar_Int.GetDefaultValue(defaultValue, sizeof(defaultValue));
 	
 	int flags = g_Cvar_Int.GetFlags();
 	
