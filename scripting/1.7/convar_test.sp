@@ -60,12 +60,87 @@ public OnPluginStart()
 	g_Cvar_Bool = CreateConVar("convar_test_bool", "1", "A test convar containing a bool value, with bounds", _, true, 0.0, true, 1.0);
 	g_Cvar_Int = CreateConVar("convar_test_int", "7", "A test convar containing an int value, with bounds", _, true, 0.0, true, 10.0);
 	
-	RegAdminCmd("cvarstring", Cmd_String, ADMFLAG_GENERIC, "Do stuff with string convar");
-	RegAdminCmd("cvarfloat", Cmd_Float, ADMFLAG_GENERIC, "Do stuff with float convar");
-	RegAdminCmd("cvarbool", Cmd_Bool, ADMFLAG_GENERIC, "Do stuff with bool convar");
-	RegAdminCmd("cvarint", Cmd_Int, ADMFLAG_GENERIC, "Do stuff with int convar");
+	RegAdminCmd("cvarreset", Cmd_Reset, ADMFLAG_GENERIC, "Reset convar_test_float");
 	
-	RegAdminCmd("cvarflags", Cmd_Flags, ADMFLAG_GENERIC, "Change enabled flags");
+	RegAdminCmd("cvarsetbounds", Cmd_SetBounds, ADMFLAG_GENERIC, "Set convar_test_float bounds");
+	
+	RegAdminCmd("cvarstring", Cmd_String, ADMFLAG_GENERIC, "Retrieve string convar and data");
+	RegAdminCmd("cvarfloat", Cmd_Float, ADMFLAG_GENERIC, "Retrieve float convar and data");
+	RegAdminCmd("cvarbool", Cmd_Bool, ADMFLAG_GENERIC, "Retrieve bool convar and data");
+	RegAdminCmd("cvarint", Cmd_Int, ADMFLAG_GENERIC, "Retrieve int convar and data");
+
+	RegAdminCmd("cvarsetstring", Cmd_SetString, ADMFLAG_GENERIC, "Set string convar");
+	RegAdminCmd("cvarsetfloat", Cmd_SetFloat, ADMFLAG_GENERIC, "Set float convar");
+	RegAdminCmd("cvarsetbool", Cmd_SetBool, ADMFLAG_GENERIC, "Set bool convar");
+	RegAdminCmd("cvarsetint", Cmd_SetInt, ADMFLAG_GENERIC, "Set int convar");
+	
+	g_Cvar_String.HookChange(Cvar_Changed);
+	g_Cvar_Float.HookChange(Cvar_Changed);
+	g_Cvar_Bool.HookChange(Cvar_Changed);
+	g_Cvar_Int.HookChange(Cvar_Changed);
+	
+	g_Cvar_Enabled.HookChange(Cvar_OldChanged);
+		
+	RegAdminCmd("cvarflags", Cmd_Flags, ADMFLAG_GENERIC, "Change convar_test_enable flags");
+}
+
+public OnPluginEnd()
+{
+	g_Cvar_String.UnhookChange(Cvar_Changed);
+	g_Cvar_Float.UnhookChange(Cvar_Changed);
+	g_Cvar_Bool.UnhookChange(Cvar_Changed);
+	g_Cvar_Int.UnhookChange(Cvar_Changed);
+}
+
+public Action:Cmd_Reset(client, args)
+{
+	if (!g_Cvar_Enabled.GetBool())
+	{
+		ReplyToCommand(client, "Plugin is disabled");
+		return Plugin_Handled;
+	}
+	
+	char myName[64];
+	g_Cvar_Float.GetName(myName, sizeof(myName));
+	
+	g_Cvar_Float.Reset();
+	
+	ReplyToCommand(client, "Reset %s to default value.", myName);
+	return Plugin_Handled;
+}
+
+public Action:Cmd_SetBounds(client, args)
+{
+	if (!g_Cvar_Enabled.GetBool())
+	{
+		ReplyToCommand(client, "Plugin is disabled");
+		return Plugin_Handled;
+	}
+	
+	char myName[64];
+	g_Cvar_Float.GetName(myName, sizeof(myName));
+	
+	if (args < 2)
+	{
+		ReplyToCommand(client, "Syntax: %s 1.0 6.0");
+		return Plugin_Handled;
+	}
+
+	float bounds[2];
+	
+	for (int i = 0; i < 2; i++)
+	{
+		char boundsString[6];
+		GetCmdArg(i+1, boundsString, sizeof(boundsString));
+		
+		bounds[i] = StringToFloat(boundsString);
+	}
+	
+	g_Cvar_Float.SetBounds(ConVarBound_Lower, true, bounds[0]);
+	g_Cvar_Float.SetBounds(ConVarBound_Upper, true, bounds[1]);
+	
+	ReplyToCommand(client, "Changed %s bounds to %f, %f", myName, bounds[0], bounds[1]);
+	return Plugin_Handled;
 }
 
 public Action:Cmd_String(client, args)
@@ -176,6 +251,96 @@ public Action:Cmd_Int(client, args)
 	return Plugin_Handled;
 }
 
+public Action:Cmd_SetString(client, args)
+{
+	char myName[64];
+	g_Cvar_String.GetName(myName, sizeof(myName));
+
+	if (args < 1)
+	{
+		ReplyToCommand(client, "Syntax: %s \"string\"", myName);
+		return Plugin_Handled;
+	}
+	
+	char newValue[64];
+	GetCmdArg(1, newValue, sizeof(newValue));
+	
+	ReplyToCommand(client, "Attempting to set %s to %s", myName, newValue);
+	
+	g_Cvar_String.SetString(newValue);
+	
+	return Plugin_Handled;
+}
+
+public Action:Cmd_SetFloat(client, args)
+{
+	char myName[64];
+	g_Cvar_Float.GetName(myName, sizeof(myName));
+
+	if (args < 1)
+	{
+		ReplyToCommand(client, "Syntax: %s \"string\"", myName);
+		return Plugin_Handled;
+	}
+	
+	char newValue[64];
+	GetCmdArg(1, newValue, sizeof(newValue));
+	
+	float newValueFloat = StringToFloat(newValue);
+	
+	ReplyToCommand(client, "Attempting to set %s to %f", myName, newValueFloat);
+
+	g_Cvar_Float.SetFloat(newValueFloat);
+
+	return Plugin_Handled;
+}
+
+public Action:Cmd_SetBool(client, args)
+{
+	char myName[64];
+	g_Cvar_Bool.GetName(myName, sizeof(myName));
+
+	if (args < 1)
+	{
+		ReplyToCommand(client, "Syntax: %s \"string\"", myName);
+		return Plugin_Handled;
+	}
+	
+	char newValue[64];
+	GetCmdArg(1, newValue, sizeof(newValue));
+	
+	bool newValueBool = bool:StringToInt(newValue);
+	
+	ReplyToCommand(client, "Attempting to set %s to %d", myName, newValueBool);
+
+	g_Cvar_Bool.SetBool(newValueBool);
+
+	return Plugin_Handled;
+}
+
+public Action:Cmd_SetInt(client, args)
+{
+	char myName[64];
+	g_Cvar_Int.GetName(myName, sizeof(myName));
+
+	if (args < 1)
+	{
+		ReplyToCommand(client, "Syntax: %s \"string\"", myName);
+		return Plugin_Handled;
+	}
+	
+	char newValue[64];
+	GetCmdArg(1, newValue, sizeof(newValue));
+	
+	int newValueInt = StringToInt(newValue);
+	
+	ReplyToCommand(client, "Attempting to set %s to %d", myName, newValueInt);
+	
+	g_Cvar_Int.SetInt(newValueInt);
+	
+	return Plugin_Handled;
+}
+
 public Action:Cmd_Flags(client, args)
 {
 	new flags = g_Cvar_Enabled.GetFlags();
@@ -193,4 +358,20 @@ public Action:Cmd_Flags(client, args)
 	ReplyToCommand(client, "New enabled flags: %d", flags);
 	
 	return Plugin_Handled;
+}
+
+public Cvar_Changed(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	char myName[64];
+	convar.GetName(myName, sizeof(myName));
+	
+	PrintToChatAll("Convar change: %s, from %s to %s", myName, oldValue, newValue);
+}
+
+public Cvar_OldChanged(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	char myName[64];
+	GetConVarName(convar, myName, sizeof(myName));
+	
+	PrintToChatAll("Convar change: %s, from %s to %s", myName, oldValue, newValue);
 }
