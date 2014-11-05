@@ -74,14 +74,14 @@ public OnPluginStart()
 	RegAdminCmd("cvarsetbool", Cmd_SetBool, ADMFLAG_GENERIC, "Set bool convar");
 	RegAdminCmd("cvarsetint", Cmd_SetInt, ADMFLAG_GENERIC, "Set int convar");
 	
+	RegAdminCmd("cvarflags", Cmd_Flags, ADMFLAG_GENERIC, "Change convar_test_enable flags (add/remove FCVAR_NOTIFY)");
+
 	g_Cvar_String.HookChange(Cvar_Changed);
 	g_Cvar_Float.HookChange(Cvar_Changed);
 	g_Cvar_Bool.HookChange(Cvar_Changed);
 	g_Cvar_Int.HookChange(Cvar_Changed);
 	
 	g_Cvar_Enabled.HookChange(Cvar_OldChanged);
-		
-	RegAdminCmd("cvarflags", Cmd_Flags, ADMFLAG_GENERIC, "Change convar_test_enable flags");
 }
 
 public OnPluginEnd()
@@ -90,6 +90,8 @@ public OnPluginEnd()
 	g_Cvar_Float.UnhookChange(Cvar_Changed);
 	g_Cvar_Bool.UnhookChange(Cvar_Changed);
 	g_Cvar_Int.UnhookChange(Cvar_Changed);
+
+	g_Cvar_Enabled.UnhookChange(Cvar_OldChanged);
 }
 
 public Action:Cmd_Reset(client, args)
@@ -274,6 +276,12 @@ public Action:Cmd_SetString(client, args)
 
 public Action:Cmd_SetFloat(client, args)
 {
+	if (!g_Cvar_Enabled.GetBool())
+	{
+		ReplyToCommand(client, "Plugin is disabled");
+		return Plugin_Handled;
+	}
+	
 	char myName[64];
 	g_Cvar_Float.GetName(myName, sizeof(myName));
 
@@ -320,6 +328,12 @@ public Action:Cmd_SetBool(client, args)
 
 public Action:Cmd_SetInt(client, args)
 {
+	if (!g_Cvar_Enabled.GetBool())
+	{
+		ReplyToCommand(client, "Plugin is disabled");
+		return Plugin_Handled;
+	}
+	
 	char myName[64];
 	g_Cvar_Int.GetName(myName, sizeof(myName));
 
@@ -343,14 +357,20 @@ public Action:Cmd_SetInt(client, args)
 
 public Action:Cmd_Flags(client, args)
 {
-	new flags = g_Cvar_Enabled.GetFlags();
-	if (flags & FCVAR_SPONLY)
+	if (!g_Cvar_Enabled.GetBool())
 	{
-		flags &= ~FCVAR_SPONLY;
+		ReplyToCommand(client, "Plugin is disabled");
+		return Plugin_Handled;
+	}
+	
+	new flags = g_Cvar_Enabled.GetFlags();
+	if (flags & FCVAR_NOTIFY)
+	{
+		flags &= ~FCVAR_NOTIFY;
 	}
 	else
 	{
-		flags |= FCVAR_SPONLY;
+		flags |= FCVAR_NOTIFY;
 	}
 	
 	g_Cvar_Enabled.SetFlags(flags);
@@ -362,6 +382,11 @@ public Action:Cmd_Flags(client, args)
 
 public Cvar_Changed(ConVar convar, const char[] oldValue, const char[] newValue)
 {
+	if (!g_Cvar_Enabled.GetBool())
+	{
+		return;
+	}
+	
 	char myName[64];
 	convar.GetName(myName, sizeof(myName));
 	
@@ -370,6 +395,11 @@ public Cvar_Changed(ConVar convar, const char[] oldValue, const char[] newValue)
 
 public Cvar_OldChanged(Handle convar, const char[] oldValue, const char[] newValue)
 {
+	if (!g_Cvar_Enabled.GetBool())
+	{
+		return;
+	}
+	
 	char myName[64];
 	GetConVarName(convar, myName, sizeof(myName));
 	
