@@ -16,7 +16,7 @@
 #include <sdktools>
 #include <tf2>
 
-#define WAITING_FOR_PLAYERS_TIMER ""
+#define WAITING_FOR_PLAYERS_TIMER "zz_teamplay_waiting_timer"
 #define RED_KOTH_TIMER "zz_red_koth_timer"
 #define BLU_KOTH_TIMER "zz_blue_koth_timer"
 
@@ -281,11 +281,11 @@ stock TF2TimerState:TF2_GetRoundTimeLeft(&timeleft)
 {
 	timeleft = -1;
 
-	new bool:bInSetup = false;;
+	new bool:bInSetup = false;
 	
 	if (GameRules_GetProp("m_bInSetup"))
 	{
-		bInSetup = true
+		bInSetup = true;
 	}
 	else
 	if (GameRules_GetProp("m_bInWaitingForPlayers"))
