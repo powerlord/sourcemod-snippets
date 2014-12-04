@@ -1,0 +1,40 @@
+"Games"
+{
+	"tf"
+	{
+		"Offsets"
+		{
+			"CTFPlayer::EquipWearable"
+			{
+				"windows"	"426"
+				"linux"		"427"
+				"mac"		"427"
+			}
+
+			"CTFPlayer::RemoveWearable"
+			{
+				"windows"	"427"
+				"linux"		"428"
+				"mac"		"428"
+			}
+
+			"CBaseEntity::IsWearable"
+			{
+				"windows"	"87"
+				"linux"		"88"
+				"mac"		"88"
+			}
+		}
+
+		"Signatures"
+		{
+			"CTFPlayer::GetEntityForLoadoutSlot"
+			{
+				"library"	"server"
+				"windows"	""
+				"linux"		"@_ZN9CTFPlayer23GetEntityForLoadoutSlotEi"
+				"mac"		"@_ZN9CTFPlayer23GetEntityForLoadoutSlotEi"
+			}
+		}
+	}
+}
