@@ -4,7 +4,7 @@
  * Name
  * Description
  *
- * Name (C)2014 Powerlord (Ross Bemrose).  All rights reserved.
+ * Name (C)2015 Powerlord (Ross Bemrose).  All rights reserved.
  * =============================================================================
  *
  * This program is free software; you can redistribute it and/or modify it under
