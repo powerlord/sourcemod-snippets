@@ -37,7 +37,7 @@
 
 #define MAXWEARABLES 8
 
-#define VERSION "2.0.1"
+#define VERSION "2.0.2"
 
 new Handle:g_Cvar_Enabled;
 
@@ -93,14 +93,22 @@ public Event_inventory(Handle:event, const String:name[], bool:dontBroadcast)
 	
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	
+	if (client <= 0)
+	{
+		return;
+	}
+	
 	new elementCount = GetEntPropArraySize(client, Prop_Send, "m_hMyWearables");
+	
+	LogMessage("Number of possible cosmetics: %d", elementCount);
+	
 	for (new i = 0; i < elementCount; i++)
 	{
 		new entity = GetEntPropEnt(client, Prop_Send, "m_hMyWearables", i);
 		if (entity > 0)
 		{
 			new itemDefinitionIndex = GetEntProp(entity, Prop_Send, "m_iItemDefinitionIndex");
-			PrintToChat(client, "Wearable [%d] index: %d", i, itemDefinitionIndex);
+			LogMessage("\"%N\" wearable [%d] entity: %d, definition index: %d", client, i, entity, itemDefinitionIndex);
 		}
 	}
 }
