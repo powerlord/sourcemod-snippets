@@ -37,7 +37,7 @@
 
 // Plugin 1.0 series
 
-enum AppropriateEnum
+enum AppropriateEnum:
 {
 	AppropriateEnum_First,		/** Description of first */
 	AppropriateEnum_Second,		/** Description of second */
@@ -47,19 +47,19 @@ enum AppropriateEnum
  * Called whenever a global forward happens
  * 
  */
-forward Plugin_AGlobalForward();
+forward void Plugin_AGlobalForward();
 
 
 /**
  * Callback for something
  */
-functag public Plugin_ACallback(const String:param1[]);
+typedef Plugin_ACallback = function (const char[] param1);
 
 /**
  * Register and unregister said callbacks
  */
-native Plugin_RegisterCallback(ACallback);
-native Plugin_UnregisterCallback(ACallback);
+native void Plugin_RegisterCallback(Plugin_ACallback ACallback);
+native void Plugin_UnregisterCallback(Plugin_ACallback ACallback);
 
 /**
  * A function with arg that returns nothing
@@ -68,26 +68,26 @@ native Plugin_UnregisterCallback(ACallback);
  * @noreturn
  * @error if it errors sometimes
  */
-native Plugin_FunctionWithArg(const String:param1[]);
+native void Plugin_FunctionWithArg(const char[] param1);
 
 /**
  * Function without arg
  * 
  * @return 		True if it's true. Otherwise false
  */
-native bool:Plugin_FunctionWithoutArg();
+native bool Plugin_FunctionWithoutArg();
 
 /**
  * A Common Function for doing something, probably a wrapper for a native
  *
  * @noreturn
  */
-stock Plugin_ACommonFunction()
+stock void Plugin_ACommonFunction()
 {
 	// Some code here
 }
 
-public SharedPlugin:__pl_pluginname = 
+public SharedPlugin __pl_pluginname = 
 {
 	name = "pluginname",
 	file = "pluginname.smx",
@@ -99,7 +99,7 @@ public SharedPlugin:__pl_pluginname =
 };
 
 #if !defined REQUIRE_PLUGIN
-public __pl_pluginname_SetNTVOptional()
+public void __pl_pluginname_SetNTVOptional()
 {
 	MarkNativeAsOptional("FunctionWithArg");
 	MarkNativeAsOptional("FunctionWithoutArg");

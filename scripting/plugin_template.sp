@@ -31,13 +31,15 @@
  * Version: $Id$
  */
 #include <sourcemod>
+
 #pragma semicolon 1
+#pragma newdecls required
 
 #define VERSION "1.0.0"
 
-new Handle:g_Cvar_Enabled;
+ConVar g_Cvar_Enabled;
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name			= "",
 	author			= "Powerlord",
 	description		= "",
@@ -47,7 +49,7 @@ public Plugin:myinfo = {
 
 // Native Support
 /*
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	CreateNative("Plugin_FunctionWithArg", Native_FunctionWithArg);
 	CreateNative("Plugin_FunctionWithoutArg", Native_FunctionWithoutArg);
@@ -60,7 +62,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 }
 */
   
-public OnPluginStart()
+public void OnPluginStart()
 {
 	CreateConVar("_version", VERSION, " version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
 	g_Cvar_Enabled = CreateConVar("_enable", "1", "Enable ?", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
@@ -70,29 +72,29 @@ public OnPluginStart()
 /*
 // Natives
 
-// native FunctionWithArg(const String:param1[]);
-public Native_FunctionWithArg(Handle:plugin, numParams)
+// native FunctionWithArg(const char[] param1);
+public int Native_FunctionWithArg(Handle plugin, int numParams)
 {
 	// for const Strings
-	new size;
+	int size;
 	GetNativeStringLength(1, size);
-	decl String:param1[size+1];
+	char[] param1 = new char[size+1];
 	GetNativeString(1, param1, size+1);
 }
 
-// native bool:FunctionWithoutArg();
-public Native_FunctionWithoutArg(Handle:plugin, numParams)
+// native bool FunctionWithoutArg();
+public int Native_FunctionWithoutArg(Handle plugin, int numParams)
 {
 	return true;
 }
 
 // native RegisterCallback(ACallback);
-public Native_RegisterCallback(Handle:plugin, numParams)
+public void Native_RegisterCallback(Handle plugin, int numParams)
 {
 }
 	
 // native UnregisterCallback(ACallback);
-public Native_UnregisterCallback(Handle:plugin, numParams)
+public void Native_UnregisterCallback(Handle plugin, int numParams)
 {
 }
 */
