@@ -49,24 +49,54 @@ enum MvMRoundType:
 
 enum
 {
+	TF2GameType_Unknown,
 	TF2GameType_CTF,
 	TF2GameType_CP,
 	TF2GameType_PL,
 	TF2GameType_Arena,
 }
 
+// Note: The following types are not separate game modes per se and you should do separate checks for them:
+// * Medieval
+// * MannPower
+// Hybrid CTF/CP should also be detected separately as only the main mode is detected.
+// Other than KOTH, the various CP types are technically not their own types either.
+// TC, in particular, is tricky.  tc_hydro uses points, but tc_meridian uses flags
+enum TF2GameMode:
+{
+	TF2GameMode_Unknown,		/**< Unknown type, unknown mode */
+	TF2GameMode_CTF,			/**< General CTF */
+	TF2GameMode_CP_AD,			/**< Attack/Defense Control Points */
+	TF2GameMode_CP_Symmetric,	/**< 5CP or unknown Control Points */
+	TF2GameMode_TC,				/**< Territory Control CP */
+	TF2GameMode_PL,				/**< General Payload */
+	TF2GameMode_Arena,			/**< Arena */
+	TF2GameMode_ItemTest,		/**< Unknown type, Item Test mode */
+	TF2GameMode_Koth,			/**< KOTH Control Points */
+	TF2GameMode_HybridCTFCP,	/**< Hybrid CTF/CP mode */
+	TF2GameMode_PLR,			/**< Payload Race, 2 team payload */
+	TF2GameMode_Training,		/**< Unknown type, training mode */
+	TF2GameMode_SD,				/**< CTF, Special Delivery */
+	TF2GameMode_MvM,			/**< CTF, Mann Vs. Machine */
+	TF2GameMode_RD,				/**< CTF, Robot Destruction */
+}
 
 ConVar g_Cvar_Enabled;
 
 ConVar g_Cvar_MaxRounds;
 
 int g_nRoundCount = 1;
+int g_nStageCount = 1;
+
+int g_nStageMax = 0;
 
 MvMRoundType g_RoundType = MvMRoundFirst;
 
 int g_GameRules = -1;
 
 bool g_bDontInterruptBroadcast = false;
+
+TF2GameMode g_GameMode = TF2GameMode_Unknown;
 
 public Plugin myinfo = {
 	name			= "MvM Round Sounds",
@@ -91,11 +121,26 @@ public void OnMapStart()
 {
 	g_RoundType = MvMRoundFirst;
 	g_nRoundCount = 1;
+	g_nStageCount = 1;
+	g_nStageMax = 0;
 	g_GameRules = -1;
+	g_bDontInterruptBroadcast = false;
+	g_GameMode = TF2GameMode_Unknown;
 }
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
+	
+	if (g_GameMode == TF2GameMode_Unknown)
+	{
+		g_GameMode = TF2_DetectGameMode();
+	}
+	
+	if (g_nStageMax == 0)
+	{
+		g_nStageMax = GetRoundCount();
+	}
+	
 	if (!g_Cvar_Enabled.BoolValue || GameRules_GetProp("m_bInWaitingForPlayers"))
 		return;
 	
@@ -129,20 +174,22 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
-	// Was this the last stage of a multi-stage map?
 	if (!g_Cvar_Enabled.BoolValue || GameRules_GetProp("m_bInWaitingForPlayers"))
 		return;
 	
-	bool bWasFullRound = event.GetBool("full_round");
+	g_nStageCount++;
 	
 	int remainingTime;
 	
+	// Negative time means unlimited time left
 	GetMapTimeLeft(remainingTime);
 	
-	g_nRoundCount++;
-	
-	if (bWasFullRound)
+	// Was this the last stage of a map?
+	if (event.GetBool("full_round"))
 	{
+		g_nRoundCount++;
+		g_nStageCount = 1;
+		
 		// The next round will be the last round
 		if (g_nRoundCount == g_Cvar_MaxRounds.IntValue)
 		{
@@ -150,10 +197,10 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 			return;
 		}
 		
-		if (GameRules_GetProp("m_nGameType") == TF2GameType_Arena)
+		if (g_GameMode == TF2GameMode_Arena)
 		{
 			// The next round will *probably* be the last round
-			if (remainingTime <= 120)
+			if (-1 < remainingTime <= 120) // 2 Minutes
 			{
 				g_RoundType = MvMRoundLast;
 				return;
@@ -162,18 +209,23 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 		else
 		{
 			// The next round will *probably* be the last round
-			if (remainingTime <= 600)
+			if (-1 < remainingTime <= 600) // 10 minutes
 			{
 				g_RoundType = MvMRoundLast;
 				return;
 			}
-			g_RoundType = RandomMidRoundType();
 		}
 	}
-	else
+
+	// Next stage is the last stage of a multi-round map with less than 10 minutes on the clock
+	// Assume it will be the last round
+	if (g_nStageCount == g_nStageMax && -1 < remainingTime <= 600)
 	{
-		g_RoundType = RandomMidRoundType();
+		g_RoundType = MvMRoundLast;
+		return;
 	}
+	
+	g_RoundType = RandomMidRoundType();
 }
 
 // Tank round is rarer.
@@ -264,6 +316,7 @@ public Action Timer_PlayNewSound(Handle timer, DataPack data)
 	bool broadcast = data.ReadCell();
 	
 	PlayNewSound(team, sound, broadcast);
+	return Plugin_Stop;
 }
 
 /**
@@ -339,4 +392,192 @@ stock void PlayNewSound(int team, const char[] sound, bool broadcast=true)
 stock void FindGameRules()
 {
 	g_GameRules = EntIndexToEntRef(FindEntityByClassname(-1, "tf_gamerules"));
+}
+
+/**
+ * This should not be executed until OnConfigsExecuted or later as the entities used may not yet exist earlier
+ */
+stock TF2GameMode TF2_DetectGameMode()
+{
+	int gameType = GameRules_GetProp("m_nGameType");
+	
+	switch (gameType)
+	{
+		case TF2GameType_Unknown:
+		{
+			if (GameRules_GetProp("m_bIsInItemTestingMode"))
+			{
+				return TF2GameMode_ItemTest;
+			}
+			else
+			if (FindEntityByClassname(-1, "tf_logic_training_mode") > -1)
+			{
+				return TF2GameMode_Training;
+			}
+			
+			return TF2GameMode_Unknown;
+		}
+		
+		case TF2GameType_CTF:
+		{
+			if (GameRules_GetProp("m_bPlayingSpecialDeliveryMode"))
+			{
+				return TF2GameMode_SD;
+			}
+			else
+			if (FindEntityByClassname(-1, "tf_logic_hybrid_ctf_cp") > -1)
+			{
+				return TF2GameMode_HybridCTFCP;
+			}
+			else
+			if (FindEntityByClassname(-1, "tf_logic_mann_vs_machine") > -1)
+			{
+				return TF2GameMode_MvM;
+			}
+			else
+			if (FindEntityByClassname(-1, "tf_logic_robot_destruction") > -1)
+			{
+				return TF2GameMode_RD;
+			}
+
+			return TF2GameMode_CTF;
+		}
+		
+		case TF2GameType_CP:
+		{
+			if (FindEntityByClassname(-1, "tf_logic_hybrid_ctf_cp") > -1)
+			{
+				return TF2GameMode_HybridCTFCP;
+			}
+			else
+			if (FindEntityByClassname(-1, "tf_logic_koth") > -1)
+			{
+				return TF2GameMode_Koth;
+			}
+			
+			int cpMaster = FindEntityByClassname(-1, "team_control_point_master");
+			
+			// There is a limit of 8 CPs, but seemingly no limit on rounds
+			// 16 is higher than you would normally see
+			int roundEntities[16];
+			
+			int roundCount = GetRoundEntities(roundEntities);
+
+			// 0 means there were no round entities, which means 1 round
+			// TC is never single-round (kinda the point of TC)
+			if (roundCount == 0)
+			{
+				// A/D CP restricts the cap winner
+				// This catches maps like cp_gravelpit, but not cp_dustbowl
+				if (GetEntProp(cpMaster, Prop_Data, "m_iInvalidCapWinner"))
+				{
+					return TF2GameMode_CP_AD;
+				}
+				
+				return TF2GameMode_CP_Symmetric;
+			}
+			
+			// OK, now check all the rounds to see if they have invalid cap winners
+			bool bAllInvalidCapWinners = true;
+			
+			for (int i = 0; i < roundCount; i++)
+			{
+				if (!GetEntProp(cpMaster, Prop_Data, "m_iInvalidCapWinner"))
+				{
+					bAllInvalidCapWinners = false;
+				}
+			}
+			
+			// Properly designed A/D CP has all invalid cap winners
+			if (bAllInvalidCapWinners)
+			{
+				return TF2GameMode_CP_AD;
+			}
+			
+			// Normal CP maps will have no more than #cp / 2 rounds.
+			// TC (assuming 2 points) can have minimum #cp - 1 rounds, assuming they're arranged in a line
+			// For reference, Hydro has (#centercp - 1)! + #basecp == (4 - 1)! + 2 == 8 rounds for 6 cps.
+			if (roundCount * 2 > GetCPCount()) // for dustbowl: 3*2 > 6 == 6 > 6 == false
+			{
+				return TF2GameMode_TC;
+			}
+			
+			// Symmetric is the default
+			return TF2GameMode_CP_Symmetric;
+		}
+		
+		case TF2GameType_PL:
+		{
+			if (FindEntityByClassname(-1, "tf_logic_multiple_escort") > -1)
+			{
+				return TF2GameMode_PLR;
+			}
+
+			return TF2GameMode_PL;
+		}
+		
+		case TF2GameType_Arena:
+		{
+			return TF2GameMode_Arena;
+		}
+	}
+	
+	return TF2GameMode_Unknown;
+}
+
+stock int GetRoundEntities(int[] roundEntities)
+{
+	int entity = -1;
+	int roundCount = 0;
+	while ((entity = FindEntityByClassname(entity, "team_control_point_round")) != -1)
+	{
+		roundEntities[roundCount] = entity;
+		roundCount++;
+	}
+	
+	return roundCount;
+}
+
+stock int GetRoundCount()
+{
+	int entity = -1;
+	int roundCount = 0;
+	while ((entity = FindEntityByClassname(entity, "team_control_point_round")) != -1)
+	{
+		roundCount++;
+	}
+	
+	if (roundCount == 0)
+	{
+		roundCount = 1;
+	}
+	
+	return roundCount;
+}
+
+stock int GetCPCount()
+{
+	int entity = -1;
+	int cpCount = 0;
+	while ((entity = FindEntityByClassname(entity, "team_control_point")) != -1)
+	{
+		cpCount++;
+	}
+	
+	return cpCount;
+}
+
+stock bool IsPlayingMedieval()
+{
+	return view_as<bool>(GameRules_GetProp("m_bPlayingMedieval"));
+}
+
+stock bool IsPlayingMannPower()
+{
+	if (GameRules_GetProp("m_bPowerupMode") && FindEntityByClassname(entity, "info_powerup_spawn")) > -1)
+	{
+		return true;
+	}
+	
+	return false;
 }
