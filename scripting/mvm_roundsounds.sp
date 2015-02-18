@@ -32,6 +32,7 @@
  */
 #include <sourcemod>
 #include <sdktools>
+#include <tf2>
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -63,12 +64,14 @@ int g_nRoundCount = 1;
 
 MvMRoundType g_RoundType = MvMRoundFirst;
 
-bool g_bInWaitingForPlayers;
+int g_GameRules = -1;
+
+bool g_bDontInterruptBroadcast = false;
 
 public Plugin myinfo = {
 	name			= "MvM Round Sounds",
 	author			= "Powerlord",
-	description		= "",
+	description		= "Replace normal round sounds with MvM Round Sounds",
 	version			= VERSION,
 	url				= ""
 };
@@ -78,9 +81,6 @@ public void OnPluginStart()
 	CreateConVar("mvmroundsounds_version", VERSION, "MvM Round Sounds version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
 	g_Cvar_Enabled = CreateConVar("mvmroundsounds_enable", "1", "Enable MvM Round Sounds?", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 
-	
-	
-	
 	HookEvent("teamplay_round_start", Event_RoundStart, EventHookMode_PostNoCopy);
 	HookEvent("teamplay_round_win", Event_RoundEnd);
 	HookEvent("teamplay_broadcast_audio", Event_BroadcastAudio, EventHookMode_Pre);
@@ -89,19 +89,9 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
-	// Make sure the MvM music is precached
-	PrecacheScriptSound("music.mvm_start_wave");
-	PrecacheScriptSound("music.mvm_start_mid_wave");
-	PrecacheScriptSound("music.mvm_start_tank_wave");
-	PrecacheScriptSound("music.mvm_start_last_wave");
-	PrecacheScriptSound("music.mvm_end_wave");
-	PrecacheScriptSound("music.mvm_end_tank_wave");
-	PrecacheScriptSound("music.mvm_end_mid_wave");
-	PrecacheScriptSound("music.mvm_end_last_wave");
-	PrecacheScriptSound("music.mvm_lost_wave");
-	
 	g_RoundType = MvMRoundFirst;
 	g_nRoundCount = 1;
+	g_GameRules = -1;
 }
 
 public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
@@ -109,13 +99,38 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 	if (!g_Cvar_Enabled.BoolValue || GameRules_GetProp("m_bInWaitingForPlayers"))
 		return;
 	
+	// Round type is selected on round end.
+	// This is so we can guess if the next round is the last round
+	// Also, so start and end round music matches
+	switch (g_RoundType)
+	{
+		case MvMRoundFirst:
+		{
+			PlayNewSound(0, "music.mvm_start_wave");
+		}
+		
+		case MvMRoundMid:
+		{
+			PlayNewSound(0, "music.mvm_start_mid_wave");
+		}
+		
+		case MvMRoundTank:
+		{
+			PlayNewSound(0, "music.mvm_start_tank_wave");
+		}
+		
+		case MvMRoundLast:
+		{
+			PlayNewSound(0, "music.mvm_start_last_wave");
+		}
+	}
 	
 }
 
 public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
 	// Was this the last stage of a multi-stage map?
-	if (!g_Cvar_Enabled.BoolValue)
+	if (!g_Cvar_Enabled.BoolValue || GameRules_GetProp("m_bInWaitingForPlayers"))
 		return;
 	
 	bool bWasFullRound = event.GetBool("full_round");
@@ -126,7 +141,7 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 	
 	g_nRoundCount++;
 	
-	if (!bWasFullRound)
+	if (bWasFullRound)
 	{
 		// The next round will be the last round
 		if (g_nRoundCount == g_Cvar_MaxRounds.IntValue)
@@ -152,20 +167,42 @@ public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 				g_RoundType = MvMRoundLast;
 				return;
 			}
-			
+			g_RoundType = RandomMidRoundType();
 		}
+	}
+	else
+	{
+		g_RoundType = RandomMidRoundType();
+	}
+}
+
+// Tank round is rarer.
+MvMRoundType RandomMidRoundType()
+{
+	int rand = GetRandomInt(1, 5);
+	if (rand == 1)
+	{
+		return MvMRoundTank;
+	}
+	else
+	{
+		return MvMRoundMid;
 	}
 }
 
 public Action Event_BroadcastAudio(Event event, const char[] name, bool dontBroadcast)
 {
-	//int team = event.GetInt("team");
+	if (!g_Cvar_Enabled.BoolValue || g_bDontInterruptBroadcast)
+		return Plugin_Continue;
+		
+	int team = event.GetInt("team");
 	char sample[PLATFORM_MAX_PATH];
 	event.GetString("sound", sample, sizeof(sample));
 	
 	if (StrEqual(sample, "Game.YourTeamLost", false))
 	{
-		event.SetString("sound", "music.mvm_lost_wave");
+		QueueNewSound(team, "music.mvm_lost_wave");
+		return Plugin_Stop;
 	}
 	else
 	if (StrEqual(sample, "Game.YourTeamWon", false))
@@ -174,25 +211,132 @@ public Action Event_BroadcastAudio(Event event, const char[] name, bool dontBroa
 		{
 			case MvMRoundFirst:
 			{
-				event.SetString("sound", "music.mvm_end_wave");
+				QueueNewSound(team, "music.mvm_end_wave");
 			}
 			
 			case MvMRoundMid:
 			{
-				event.SetString("sound", "music.mvm_end_mid_wave");
+				QueueNewSound(team, "music.mvm_end_mid_wave");
 			}
 			
 			case MvMRoundTank:
 			{
-				event.SetString("sound", "music.mvm_end_tank_wave");
+				QueueNewSound(team, "music.mvm_end_tank_wave");
 			}
 			
 			case MvMRoundLast:
 			{
-				event.SetString("sound", "music.mvm_end_last_wave");
+				QueueNewSound(team, "music.mvm_end_last_wave");
 			}
 		}
+		return Plugin_Stop;		
 	}
 	return Plugin_Continue;
 }
 
+/**
+ * Delay a new sound by 0.1 second.
+ * This is to make sure we aren't firing an event/UserMessage from inside another event/UserMessage.
+ * 
+ * @param team		Which team are we playing the sound for. 0 = all teams
+ * @param sound		What sound are we playing? For broadcast sounds, this is the name from a gamesounds file
+ * 					For normal sounds, this is the filepath inside sound/
+ * @param broadcast	Is this a broadcast sound?
+ * @noreturn
+ */
+void QueueNewSound(int team, const char[] sound, bool broadcast=true)
+{
+	DataPack data;
+	CreateDataTimer(0.1, Timer_PlayNewSound, data, TIMER_FLAG_NO_MAPCHANGE);
+	data.WriteCell(team);
+	data.WriteString(sound);
+	data.WriteCell(broadcast);
+	data.Reset();
+}
+
+public Action Timer_PlayNewSound(Handle timer, DataPack data)
+{
+	int team = data.ReadCell();
+	
+	char sound[PLATFORM_MAX_PATH];
+	data.ReadString(sound, sizeof(sound));
+	
+	bool broadcast = data.ReadCell();
+	
+	PlayNewSound(team, sound, broadcast);
+}
+
+/**
+ * This function plays either a broadcast sound or a regular sound sample
+ * 
+ * @param team		Which team are we playing the sound for. 0 = all teams
+ * @param sound		What sound are we playing? For broadcast sounds, this is the name from a gamesounds file
+ * 					For normal sounds, this is the filepath inside sound/
+ * @param broadcast	Is this a broadcast sound?
+ * @noreturn
+ */
+
+stock void PlayNewSound(int team, const char[] sound, bool broadcast=true)
+{
+	if (broadcast)
+	{
+		if (g_GameRules == -1)
+		{
+			FindGameRules();
+		}
+		
+		if (EntRefToEntIndex(g_GameRules) == INVALID_ENT_REFERENCE)
+		{
+			FindGameRules();
+		}
+		
+		PrecacheScriptSound(sound);
+		
+		g_bDontInterruptBroadcast = true;
+		
+		Event playSound = CreateEvent("teamplay_broadcast_audio");
+		playSound.SetInt("team", team);
+		playSound.SetString("sound", sound);
+		playSound.Fire();
+		
+		g_bDontInterruptBroadcast = false;
+	}
+	else
+	{
+		if (!IsSoundPrecached(sound))
+		{
+			PrecacheSound(sound);
+		}
+		
+		if (team == 0)
+		{
+			EmitSoundToAll(sound);
+		}
+		else
+		{
+			int[] clients = new int[MaxClients];
+			int count = 0;
+			
+			for (int i = 1; i <= MaxClients; i++)
+			{
+				if (IsClientInGame(i) && GetClientTeam(i) == team)
+				{
+					clients[count++] = i;
+				}
+			}
+			
+			EmitSound(clients, count, sound);
+		}
+	}
+}
+
+/**
+ * Finds the tf_gamerules entity
+ * 'cause I didn't want to stick this code in multiple spots.
+ * 
+ * @noreturn
+ */
+stock void FindGameRules()
+{
+	g_GameRules = EntIndexToEntRef(FindEntityByClassname(-1, "tf_gamerules"));
+}
