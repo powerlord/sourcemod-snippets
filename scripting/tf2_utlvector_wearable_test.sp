@@ -93,14 +93,21 @@ public Action:Cmd_GetAllHats(client, args)
 			
 		for (new j = 0; j < 8; j++)
 		{
-			new wearable = GetEntData(i, OFFSET + offset + (j * OFFSET_SIZE), OFFSET_SIZE);
+			new totalOffset = OFFSET + offset + (j * OFFSET_SIZE);
+			new wearable = GetEntDataEnt2(i, OFFSET + offset + (j * OFFSET_SIZE));
 			new itemDefinitionIndex = -1;
-			if (wearable > -1 && IsValidEntity(wearable))
+			new String:classname[64];
+			
+			if (wearable > 0 && IsValidEntity(wearable))
 			{
-				itemDefinitionIndex = GetEntProp(wearable, Prop_Send, "m_iItemDefinitionIndex");
+				GetEntityClassname(wearable, classname, sizeof(classname));
+				if (StrEqual(classname, "tf_wearable"))
+				{
+					itemDefinitionIndex = GetEntProp(wearable, Prop_Send, "m_iItemDefinitionIndex");
+				}
 			}
 			
-			ReplyToCommand(client, "\"%N\" wearable 00%d: %d (%d)", i, j+1, wearable, itemDefinitionIndex);
+			ReplyToCommand(client, "\"%N\" wearable (%d) 00%d: %s %d (%d)", i, totalOffset, j+1, classname, wearable, itemDefinitionIndex);
 			
 		}
 	}
