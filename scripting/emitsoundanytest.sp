@@ -50,7 +50,7 @@ public Plugin myinfo = {
 
 public void OnPluginStart()
 {
-	CreateConVar("_version", VERSION, " version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
+	CreateConVar("emitsoundanytest_version", VERSION, "EmitSoundAny Test version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
 	
 	RegAdminCmd("testsound", Cmd_TestSound, ADMFLAG_GENERIC, "Test Emit Sound Any");
 	RegAdminCmd("testsoundall", Cmd_TestSoundAll, ADMFLAG_GENERIC, "Test Emit Sound Any");
@@ -60,6 +60,10 @@ public void OnPluginStart()
 public void OnMapStart()
 {
 	PrecacheSoundAny(SOUND);
+
+	char download[PLATFORM_MAX_PATH];
+	Format(download, sizeof(download), "sound/%s", SOUND);
+	AddFileToDownloadsTable(download);
 }
 
 public Action Cmd_TestSound(int client, int args)
