@@ -168,7 +168,7 @@ stock EmitSoundToAllAny(const String:sample[],
 	origin, dir, updatePos, soundtime);
 }
 
-stock EmitAmbientSoundAny(const String:name[],
+stock EmitAmbientSoundAny(const String:sample[],
 						const Float:pos[3],
 						entity = SOUND_FROM_WORLD,
 						level = SNDLEVEL_NORMAL,
@@ -177,6 +177,8 @@ stock EmitAmbientSoundAny(const String:name[],
 						pitch = SNDPITCH_NORMAL,
 						Float:delay = 0.0)
 {
+	EmitSoundCheckEngineVersion();
+	
 	decl String:szSound[PLATFORM_MAX_PATH];
 	
 	if (g_bNeedsFakePrecache)
