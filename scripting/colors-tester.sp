@@ -31,15 +31,17 @@
  * Version: $Id$
  */
 #include <sourcemod>
-#include <colors>
+
+#pragma newdecls required
+#include "include/colors"
 #pragma semicolon 1
-#define VERSION "1.2.0"
+
+#define VERSION "2.0.0"
 
 #define TAG "[CIT] "
-
 //new Handle:g_Cvar_Enabled;
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name			= "colors.inc Tester",
 	author			= "Powerlord",
 	description		= "Tests new functions for colors.inc",
@@ -47,27 +49,72 @@ public Plugin:myinfo = {
 	url				= "https://forums.alliedmods.net/showthread.php?t=96831"
 };
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	CreateConVar("colorstester_version", VERSION, "Colors Tester version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
 	//g_Cvar_Enabled = CreateConVar("colorstester_enable", "1", "Enable ?", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 	
+	RegAdminCmd("creplytocommand", Cmd_CReplyToCommand, ADMFLAG_GENERIC, "Test CReplyToCommand");
+	RegAdminCmd("creplytocommandex", Cmd_CReplyToCommandEx, ADMFLAG_GENERIC, "Test CReplyToCommandEx");
+	RegAdminCmd("cprinttochat", Cmd_CPrintToChat, ADMFLAG_GENERIC, "Test CPrintToChat");
+	RegAdminCmd("cprinttochatex", Cmd_CPrintToChatEx, ADMFLAG_GENERIC, "Test CPrintToChatEx");
+	RegAdminCmd("cprinttochatall", Cmd_CPrintToChat, ADMFLAG_GENERIC, "Test CPrintToChatAll");
+	RegAdminCmd("cprinttochatallex", Cmd_CPrintToChatEx, ADMFLAG_GENERIC, "Test CPrintToChatAllEx");
 	RegAdminCmd("showactivity", Cmd_ShowActivity, ADMFLAG_GENERIC, "Test CShowActivity");
 	RegAdminCmd("showactivityex", Cmd_ShowActivityEx, ADMFLAG_GENERIC, "Test CShowActivityEx");
 	RegAdminCmd("showactivity2", Cmd_ShowActivity2, ADMFLAG_GENERIC, "Test CShowActivity2");
 }
 
-public Action:Cmd_ShowActivity(client, args)
+public Action Cmd_CReplyToCommand(int client, int args)
+{
+	CReplyToCommand(client, "Tested {green}CReplyToCommand");
+	return Plugin_Handled;
+}
+
+public Action Cmd_CReplyToCommandEx(int client, int args)
+{
+	CReplyToCommandEx(client, client, "Tested {teamcolor}CReplyToCommandEx");
+	return Plugin_Handled;
+}
+
+public Action Cmd_CPrintToChat(int client, int args)
+{
+	CPrintToChat(client, "Tested {green}CPrintToChat");
+	return Plugin_Handled;
+}
+
+public Action Cmd_CPrintToChatEx(int client, int args)
+{
+	CPrintToChatEx(client, client, "Tested {teamcolor}CPrintToChatEx");
+	return Plugin_Handled;
+}
+
+public Action Cmd_CPrintToChatAll(int client, int args)
+{
+	CPrintToChatAll("Tested {green}CPrintToChatAll");
+	return Plugin_Handled;
+}
+
+public Action Cmd_CPrintToChatAllEx(int client, int args)
+{
+	CPrintToChatAllEx( client, "Tested {teamcolor}CPrintToChatAllEx");
+	return Plugin_Handled;
+}
+
+public Action Cmd_ShowActivity(int client, int args)
 {
 	CShowActivity(client, "Tested {teamcolor}CShowActivity");
+	return Plugin_Handled;
 }
 
-public Action:Cmd_ShowActivityEx(client, args)
+public Action Cmd_ShowActivityEx(int client, int args)
 {
 	CShowActivityEx(client, TAG, "Tested {teamcolor}CShowActivityEx");
+	return Plugin_Handled;
 }
 
-public Action:Cmd_ShowActivity2(client, args)
+public Action Cmd_ShowActivity2(int client, int args)
 {
 	CShowActivity2(client, TAG, "Tested {teamcolor}CShowActivity2");
+	return Plugin_Handled;
 }
