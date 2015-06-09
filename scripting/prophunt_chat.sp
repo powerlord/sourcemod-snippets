@@ -33,6 +33,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <tf2>
+#include <tf2_stocks>
 
 #pragma semicolon 1
 
@@ -74,10 +75,16 @@ public OnPluginStart()
 	
 	HookEvent("teamplay_round_start", Event_RoundStart);
 	HookEvent("player_team", Event_TeamChange);
+	HookEvent("player_death", Event_PlayerDeath);
 	
 	HookUserMessage(GetUserMessageId("SayText2"), UsrMsg_SayText2, true);
 	
 	g_bProtoBuf = GetUserMessageType() == UM_Protobuf;
+}
+
+public OnClientPutInServer(client)
+{
+	SetClientListeningFlags(client, VOICE_LISTENALL);
 }
 
 public CvarChange_Alltalk(Handle:convar, const String:oldValue[], const String:newValue[])
@@ -91,8 +98,35 @@ public CvarChange_Alltalk(Handle:convar, const String:oldValue[], const String:n
 
 public Event_RoundStart(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	
+	for (new i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i))
+		{
+			if (GetClientTeam(i) != TEAM_HUNTER)
+			{
+				SetClientListeningFlags(i, VOICE_LISTENALL);
+			}
+			else
+			{
+				SetClientListeningFlags(i, VOICE_NORMAL);
+			}
+		}
+	}
 }
+
+public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	if (GetEventInt(event, "death_flags") & TF_DEATHFLAG_DEADRINGER)
+	{
+		return;
+	}
+	
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	
+	SetClientListeningFlags(client, VOICE_LISTENALL);
+}
+
+
 
 public Event_TeamChange(Handle:event, const String:name[], bool:dontBroadcast)
 {
@@ -100,7 +134,7 @@ public Event_TeamChange(Handle:event, const String:name[], bool:dontBroadcast)
 	new team = GetEventInt(event, "team");
 	new oldTeam = GetEventInt(event, "oldteam");
 	
-	if (team == TEAM_PROP)
+	if (team != TEAM_HUNTER)
 	{
 		SetClientListeningFlags(client, VOICE_LISTENALL);
 	}
@@ -112,14 +146,14 @@ public Event_TeamChange(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Action:UsrMsg_SayText2(UserMsg:msg_id, Handle:msg, const players[], playersNum, bool:reliable, bool:init)
 {
-	new ent_idx;
+	new client;
 	new bool:chat;
 	new String:msg_name[128];
 	new String:params[4][64];
 	
 	if (g_bProtoBuf)
 	{
-		ent_idx = PbReadInt(msg, "ent_idx");
+		client = PbReadInt(msg, "ent_idx");
 		chat = PbReadBool(msg, "chat");
 		PbReadString(msg, "msg_name", msg_name, sizeof(msg_name));
 		for (new i = 0; i < 4; i++)
@@ -129,7 +163,7 @@ public Action:UsrMsg_SayText2(UserMsg:msg_id, Handle:msg, const players[], playe
 	}
 	else
 	{
-		ent_idx = BfReadByte(msg);
+		client = BfReadByte(msg);
 		chat = bool:BfReadByte(msg);
 		BfReadString(msg, msg_name, sizeof(msg_name));
 		for (new i = 0; i < 4; i++)
@@ -139,21 +173,21 @@ public Action:UsrMsg_SayText2(UserMsg:msg_id, Handle:msg, const players[], playe
 	}
 
 	// Not sent by a player/sent by disconnected player index, let it through
-	if (ent_idx <= 0 || ent_idx > MaxClients || !IsClientInGame(ent_idx))
+	if (client <= 0 || client > MaxClients || !IsClientInGame(client))
 	{
 		return Plugin_Continue;
 	}
 	
 	// Logic to figure out targets here
 	
-	new team = GetClientTeam(ent_idx);
+	new team = GetClientTeam(client);
 	
-	new alive = IsPlayerAlive(ent_idx);
+	new alive = IsPlayerAlive(client);
 	
 	new Handle:data = CreateDataPack();
 	
 	WritePackString(data, "SayText2");
-	WritePackCell(data, ent_idx);
+	WritePackCell(data, client);
 	WritePackCell(data, chat);
 	WritePackString(data, msg_name);
 	for (new i = 0; i < 4; i++)
