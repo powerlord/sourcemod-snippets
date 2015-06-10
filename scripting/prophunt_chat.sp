@@ -40,13 +40,12 @@
 #define VERSION "1.0.0"
 
 new Handle:g_Cvar_Enabled;
-new Handle:g_Cvar_SpectatorMode;
 
 new Handle:g_Cvar_Alltalk;
 
-new bool:g_Spec[MAXPLAYERS+1];
-
 new bool:g_bProtoBuf = false;
+
+new bool:g_bEnabled = false;
 
 #define TEAM_BLUE _:TFTeam_Blue
 #define TEAM_RED _:TFTeam_Red
@@ -77,18 +76,34 @@ public OnPluginStart()
 	HookEvent("player_team", Event_TeamChange);
 	HookEvent("player_death", Event_PlayerDeath);
 	
+	// To my knowledge, only SayText2 is used by TF2 for chat
 	HookUserMessage(GetUserMessageId("SayText2"), UsrMsg_SayText2, true);
 	
 	g_bProtoBuf = GetUserMessageType() == UM_Protobuf;
 }
 
+public OnConfigsExecuted()
+{
+	g_bEnabled = GetConVarBool(g_Cvar_Enabled);
+}
+
 public OnClientPutInServer(client)
 {
+	if (!g_bEnabled)
+	{
+		return;
+	}
+	
 	SetClientListeningFlags(client, VOICE_LISTENALL);
 }
 
 public CvarChange_Alltalk(Handle:convar, const String:oldValue[], const String:newValue[])
 {
+	if (!g_bEnabled)
+	{
+		return;
+	}
+	
 	// Force sv_alltalk off
 	if (GetConVarBool(convar))
 	{
@@ -98,6 +113,11 @@ public CvarChange_Alltalk(Handle:convar, const String:oldValue[], const String:n
 
 public Event_RoundStart(Handle:event, const String:name[], bool:dontBroadcast)
 {
+	if (!g_bEnabled)
+	{
+		return;
+	}
+	
 	for (new i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i))
@@ -116,6 +136,11 @@ public Event_RoundStart(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
+	if (!g_bEnabled)
+	{
+		return;
+	}
+	
 	if (GetEventInt(event, "death_flags") & TF_DEATHFLAG_DEADRINGER)
 	{
 		return;
@@ -130,9 +155,13 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Event_TeamChange(Handle:event, const String:name[], bool:dontBroadcast)
 {
+	if (!g_bEnabled)
+	{
+		return;
+	}
+	
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	new team = GetEventInt(event, "team");
-	new oldTeam = GetEventInt(event, "oldteam");
 	
 	if (team != TEAM_HUNTER)
 	{
@@ -146,6 +175,11 @@ public Event_TeamChange(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Action:UsrMsg_SayText2(UserMsg:msg_id, Handle:msg, const players[], playersNum, bool:reliable, bool:init)
 {
+	if (!g_bEnabled)
+	{
+		return Plugin_Continue;
+	}
+	
 	new client;
 	new bool:chat;
 	new String:msg_name[128];
@@ -173,7 +207,7 @@ public Action:UsrMsg_SayText2(UserMsg:msg_id, Handle:msg, const players[], playe
 	}
 
 	// Not sent by a player/sent by disconnected player index, let it through
-	if (client <= 0 || client > MaxClients || !IsClientInGame(client))
+	if (!StrEqual(msg_name, "TF_Chat_All") || !chat || client <= 0 || client > MaxClients || !IsClientInGame(client))
 	{
 		return Plugin_Continue;
 	}
@@ -182,11 +216,42 @@ public Action:UsrMsg_SayText2(UserMsg:msg_id, Handle:msg, const players[], playe
 	
 	new team = GetClientTeam(client);
 	
-	new alive = IsPlayerAlive(client);
+	// Messages from hunters should go through to all players
+	if (team == TEAM_HUNTER)
+	{
+		return Plugin_Continue;
+	}
+	
+	new newPlayers[MaxClients];
+	new newPlayersNum = 0;
+	
+	for (new i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i))
+		{
+			if ( (GetClientTeam(i) == TEAM_HUNTER && !IsPlayerAlive(i)) || GetClientTeam(i) != TEAM_HUNTER )
+			{
+				newPlayers[newPlayersNum] = i;
+				newPlayersNum++;
+			}
+		}
+	}
+	
+	new flags;
+	
+	if (reliable)
+	{
+		flags |= USERMSG_RELIABLE;
+	}
+	
+	if (init)
+	{
+		flags |= USERMSG_INITMSG;
+	}
 	
 	new Handle:data = CreateDataPack();
 	
-	WritePackString(data, "SayText2");
+	WritePackCell(data, flags);
 	WritePackCell(data, client);
 	WritePackCell(data, chat);
 	WritePackString(data, msg_name);
@@ -195,30 +260,75 @@ public Action:UsrMsg_SayText2(UserMsg:msg_id, Handle:msg, const players[], playe
 		WritePackString(data, params[i]);
 	}
 	
+	WritePackCell(data, newPlayersNum);
+	for (new i = 0; i < newPlayersNum; i++)
+	{
+		WritePackCell(data, newPlayers[i]);
+	}
 	
 	ResetPack(data);
+	
+	// You cannot modify the params in a usermessage and you cannot send a new usermessage within a user message.
+	// Wait a frame, then send it.
+	RequestFrame(SendSayText2, data);
+	
 	return Plugin_Handled;
 }
 
-public SendSayText(any:data)
+public SendSayText2(any:data)
 {
-	new ent_idx;
+	new flags;
+	new client;
 	new bool:chat;
-	new String:usermsg_name[16];
 	new String:msg_name[128];
 	new String:params[4][64];
+	int playersNum;
 	
-	ReadPackString(data, usermsg_name, sizeof(usermsg_name));
-	ent_idx = ReadPackCell(data);
+	flags = ReadPackCell(data);
+	client = ReadPackCell(data);
 	chat = bool:ReadPackCell(data);
 	ReadPackString(data, msg_name, sizeof(msg_name));
+	
+	flags |= USERMSG_BLOCKHOOKS;
 	
 	for (new i = 0; i < 4; i++)
 	{
 		ReadPackString(data, params[i], sizeof(params[]));
 	}
 	
+	playersNum = ReadPackCell(data);
+	
+	new players[playersNum];
+	
+	for (new i = 0; i < playersNum; i++)
+	{
+		players[i] = ReadPackCell(data);
+	}
+	
+	new Handle:msg = StartMessage("SayText2", players, playersNum, flags);
+	
 	if (g_bProtoBuf)
 	{
+		PbSetInt(msg, "ent_idx", client);
+		PbSetBool(msg, "chat", chat);
+		PbSetString(msg, "msg_name", msg_name);
+		
+		for (new i = 0; i < 4; i++)
+		{
+			PbAddString(msg, "params", params[i]);
+		}
 	}
+	else
+	{
+		BfWriteByte(msg, client);
+		BfWriteByte(msg, chat);
+		BfWriteString(msg, msg_name);
+		
+		for (new i = 0; i < 4; i++)
+		{
+			BfWriteString(msg, params[i]);
+		}
+	}
+	
+	EndMessage();
 }
