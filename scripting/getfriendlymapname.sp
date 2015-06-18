@@ -78,9 +78,18 @@ public Action Cmd_FriendlyName(int client, int args)
  * @param friendlyName		The map name with the extra workshop path bits removed
  * @param maxlength			The max length of friendlyName
  * 							(We recommend PLATFORM_MAX_PATH)
+ * @param bIsMapResolved	True if map is a resolved Fuzzy Name, false if we need to resolve it first.
+ * 							Convenience field for plugins that don't need the resolved map name.
  */
-stock void GetFriendlyMapName(const char[] resolvedMap, char[] friendlyName, int maxlength)
+stock void GetFriendlyMapName(const char[] resolvedMap, char[] friendlyName, int maxlength, bool bIsMapResolved=true)
 {
+	char szTmp[PLATFORM_MAX_PATH];
+
+	if (bIsMapResolved || !ResolveFuzzyMapName(resolvedMap, szTmp, sizeof(szTmp)))
+	{
+		strcopy(szTmp, sizeof(szTmp), resolvedMap);
+	}
+	
 	EngineVersion version = GetEngineVersion();
 	switch (version)
 	{
@@ -88,17 +97,27 @@ stock void GetFriendlyMapName(const char[] resolvedMap, char[] friendlyName, int
 		{
 			int ugcPos;
 			
-			// In TF2, workshop maps show up as workshop/mapname.ugc1234567
-			if (strncmp(resolvedMap, "workshop/", 9) == 0 && (ugcPos = StrContains(resolvedMap, ".ugc")) > -1)
+			// In TF2, workshop maps show up as workshop/mapname.ugc123456789
+			if (strncmp(szTmp, "workshop/", 9) == 0 && (ugcPos = StrContains(szTmp, ".ugc")) > -1)
 			{
-				strcopy(friendlyName, maxlength < ugcPos - 8 ? maxlength : ugcPos - 8, resolvedMap[9]);
+				// technically, this is (ugcPos + 1) - 9, but lets just cancel the 1.
+				strcopy(friendlyName, maxlength < ugcPos - 8 ? maxlength : ugcPos - 8, szTmp[9]);
 				return;
 			}
-			
+		}
+		
+		case Engine_CSGO:
+		{
+			int lastSlashPos;
+			if (strncmp(szTmp, "workshop/", 9) == 0 && (lastSlashPos = FindCharInString(szTmp, '/', true)) > 9)
+			{
+				int newlength = strlen(szTmp) - lastSlashPos;
+				strcopy(friendlyName, maxlength < newlength ? maxlength : newlength, szTmp[lastSlashPos+1]);
+				return;
+			}
 		}
 	}
 	
 	// Fallback to just copying the name back to itself
-	strcopy(friendlyName, maxlength, resolvedMap);
+	strcopy(friendlyName, maxlength, szTmp);
 }
-
