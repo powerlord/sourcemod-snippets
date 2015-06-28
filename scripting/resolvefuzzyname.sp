@@ -35,7 +35,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define VERSION "1.0.0"
+#define VERSION "2.0.0"
 
 public Plugin myinfo = {
 	name			= "Resolve Fuzzy Map Name",
@@ -47,7 +47,7 @@ public Plugin myinfo = {
 
 public void OnPluginStart()
 {
-	CreateConVar("resolvefuzzyname_version", VERSION, "Resolve Fuzzy Map Name version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
+	CreateConVar("resolvefuzzyname_version", VERSION, "Resolve Fuzzy Map Name version", FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
 	
 	RegAdminCmd("mappath", Cmd_MapPath, ADMFLAG_GENERIC, "Print out a map's full path");
 }
@@ -70,16 +70,36 @@ public Action Cmd_MapPath(int client, int args)
 	}
 	
 	char output[PLATFORM_MAX_PATH];
+	strcopy(output, sizeof(output), map);
+	FindMapResult result = FindMap(map, sizeof(map));
 	
-	if (ResolveFuzzyMapName(map, output, sizeof(output)))
+	switch(result)
 	{
-		ReplyToCommand(client, "%s's real path is %s", map, output);
+		case FindMap_Found:
+		{
+			ReplyToCommand(client, "%s is the real path", map);
+		}
+		
+		case FindMap_NotFound:
+		{
+			ReplyToCommand(client, "%s not found", map);
+		}
+		
+		case FindMap_FuzzyMatch:
+		{
+			ReplyToCommand(client, "%s was fuzzy matched to %s", map, output);
+		}
+		
+		case FindMap_NonCanonical:
+		{
+			ReplyToCommand(client, "%s is a workshop map, resolved to %s", map, output);
+		}
+		
+		case FindMap_PossiblyAvailable:
+		{
+			ReplyToCommand(client, "%s is an unresolved workshop map.  Use tf_workshop_map_sync to track this map.");
+		}
 	}
-	else
-	{
-		ReplyToCommand(client, "%s is the full path.", map);
-	}
-	
 	
 	return Plugin_Handled;
 }
