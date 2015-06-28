@@ -71,7 +71,7 @@ public Action Cmd_MapPath(int client, int args)
 	
 	char output[PLATFORM_MAX_PATH];
 	strcopy(output, sizeof(output), map);
-	FindMapResult result = FindMap(map, sizeof(map));
+	FindMapResult result = FindMap(output, sizeof(output));
 	
 	switch(result)
 	{
@@ -97,7 +97,7 @@ public Action Cmd_MapPath(int client, int args)
 		
 		case FindMap_PossiblyAvailable:
 		{
-			ReplyToCommand(client, "%s is an unresolved workshop map.  Use tf_workshop_map_sync to track this map.");
+			ReplyToCommand(client, "%s is an unresolved workshop map.  Use tf_workshop_map_sync to track this map.", map);
 		}
 	}
 	
