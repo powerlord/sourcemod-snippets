@@ -63,12 +63,13 @@ public Action Cmd_MapPath(int client, int args)
 	char map[PLATFORM_MAX_PATH];
 	GetCmdArg(1, map, sizeof(map));
 	
+	/*
 	if (!IsMapValid(map))
 	{
 		ReplyToCommand(client, "%s is not a valid map", map);
 		return Plugin_Handled;
 	}
-	
+	*/
 	char output[PLATFORM_MAX_PATH];
 	strcopy(output, sizeof(output), map);
 	FindMapResult result = FindMap(output, sizeof(output));
