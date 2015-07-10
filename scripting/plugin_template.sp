@@ -64,8 +64,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
   
 public void OnPluginStart()
 {
-	CreateConVar("_version", VERSION, " version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
-	g_Cvar_Enabled = CreateConVar("_enable", "1", "Enable ?", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
+	CreateConVar("_version", VERSION, " version", FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
+	g_Cvar_Enabled = CreateConVar("_enable", "1", "Enable ?", FCVAR_NOTIFY|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 	
 }
 
