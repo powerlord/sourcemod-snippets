@@ -19,6 +19,7 @@
 #define WAITING_FOR_PLAYERS_TIMER "zz_teamplay_waiting_timer"
 #define RED_KOTH_TIMER "zz_red_koth_timer"
 #define BLU_KOTH_TIMER "zz_blue_koth_timer"
+#define OVERTIME_TIMER ""
 
 #define CONTROL_POINT_MIN 0
 #define CONTROL_POINT_MAX 7
@@ -85,9 +86,12 @@ enum TF2TimerState
 {
 	TF2TimerState_NotApplicable,		/**< We are in a round, but timers don't apply. */
 	TF2TimerState_WaitingForPlayers,	/**< We are currently in waiting for players */
-	TF2TimerState_Paused,				/**< Has timers, but they're paused */
+	TF2TimerState_Overtime,			/**< We are currently in waiting for players */
 	TF2TimerState_Setup,				/**< We are in Setup time and timer reflects that */
+	TF2TimerState_Paused,				/**< Has timers, but they're paused */
 	TF2TimerState_Active,				/**< We are actively in a round */
+	TF2TimerState_KothRedActive,		/**< RED Koth clock is ticking */
+	TF2TimerState_KothBlueActive,		/**< BLU Koth clock is ticking */
 }
 
 enum TF2GameType
@@ -283,32 +287,30 @@ stock TF2TimerState:TF2_GetRoundTimeLeft(&timeleft)
 
 	new bool:bInSetup = false;
 	
-	if (GameRules_GetProp("m_bInSetup"))
+	if (TF2_IsSetupTime())
 	{
 		bInSetup = true;
 	}
 	else
-	if (GameRules_GetProp("m_bInWaitingForPlayers"))
+	if (TF2_IsWaitingForPlayers())
 	{
 		timeleft = GetWaitingForPlayersTime();
 		return TF2TimerState_WaitingForPlayers;
 	}
 	else
-	if (GameRules_GetProp("m_bInOvertime"))
+	if (TF2_IsOvertime())
 	{
 		timeleft = 0;
 		return TF2TimerState_Active;
 	}
 	
-	new timerEnt = -1;
-
-	if (TF2_IsMvM())
+	if (TF2_IsGameModeMvM())
 	{
 		timeleft = -1;
 		return TF2TimerState_NotApplicable;
 	}
 	
-	if (TF2_IsKoth())
+	if (TF2_IsGameModeKoth())
 	{
 		new tempRedTimeLeft = -1;
 		new tempBluTimeLeft = -1;
@@ -321,42 +323,56 @@ stock TF2TimerState:TF2_GetRoundTimeLeft(&timeleft)
 		if (redActive == TF2TimerState_Active)
 		{
 			timeleft = tempRedTimeLeft;
-			return TF2TimerState_Active;
+			return TF2TimerState_KothRedActive;
 		}
 		else
 		if (bluActive == TF2TimerState_Active)
 		{
 			timeleft = tempBluTimeLeft;
-			return TF2TimerState_Active;
+			return TF2TimerState_KothBlueActive;
 		}
+		/*
 		else
 		{
 			timeleft = -1;
 			return TF2TimerState_Paused;
 		}
+		*/
 	}
 	
 	if (TF2_GetGameType() == TF2GameType_CTF && !TF2_IsGameModeSD())
 	{
 		new bool:valid = GetMapTimeLeft(timeleft);
+		if (valid)
+		{
+			return TF2TimerState_Active;
+		}
+		else
+		{
+			timeleft = -1;
+			return TF2TimerState_NotApplicable;
+		}
 	}
 	
 	new bool:bHasTimer = false;
-	while ((timerEnt = FindEntityByClassname(timerEnt, "team_round_timer") != -1))
+
+	new timerEnt = -1;
+	
+	while ((timerEnt = FindEntityByClassname(timerEnt, "team_round_timer")) != -1)
 	{
 		decl String:tempTimerName[128];
-		GetEntPropString(timerEnt, Prop_Send, "m_iName", tempTimerName, sizof(tempTimerName));
-		if (StrEqual(tempTimeName, WAITING_FOR_PLAYERS_TIMER))
+		GetEntPropString(timerEnt, Prop_Data, "m_iName", tempTimerName, sizeof(tempTimerName));
+		if (StrEqual(tempTimerName, WAITING_FOR_PLAYERS_TIMER))
 			continue;
 			
 		bHasTimer = true;
-		if (!GetEntProp(timerEnt, Prop_Send, "m_bIsDisabled"))
+		if (GetEntProp(timerEnt, Prop_Send, "m_bShowInHUD"))
 		{
-			timeleft = GetTimerTime(timerEnt);
+			timeleft = GetTimeRemaining(timerEnt);
 			
 			if (GetEntProp(timerEnt, Prop_Send, "m_bTimerPaused"))
 			{
-				continue;
+				return TF2TimerState_Paused;
 			}
 			
 			if (bInSetup)
@@ -364,11 +380,16 @@ stock TF2TimerState:TF2_GetRoundTimeLeft(&timeleft)
 				return TF2TimerState_Setup;
 			}
 			
+			if (TF2_IsOvertime())
+			{
+				return TF2TimerState_Overtime;
+			}
+			
 			return TF2TimerState_Active;
 		}
 	}
 	
-	if (hasTimer)
+	if (bHasTimer)
 	{
 		return TF2TimerState_Paused;
 	}
@@ -376,26 +397,47 @@ stock TF2TimerState:TF2_GetRoundTimeLeft(&timeleft)
 	return TF2TimerState_NotApplicable;
 }
 
-static stock GetTimerTime(timerEnt)
+// Get the amount of time left on a timer
+// Adapted from Valve's SDK2013 CTeamRoundTimer::GetTimeRemaining()
+static stock GetTimeRemaining(timer)
 {
-	if (!IsValidEntity(timerEnt))
+	if (!IsValidEntity(timer))
 	{
 		return -1;
 	}
 	
-	new Float:fTimeLeft = GetEntPropFloat(timerEnt, Prop_Send, "m_flTimeRemaining");
-	return RoundToZero(fTimeLeft);
+	new Float:flSecondsRemaining;
+	
+	if (GetEntProp(timer, Prop_Send, "m_bStopWatchTimer") && GetEntProp(timer, Prop_Send, "m_bInCaptureWatchState"))
+	{
+		flSecondsRemaining = GetEntPropFloat(timer, Prop_Send, "m_flTotalTime");
+	}
+	else
+	{
+		if (GetEntProp(timer, Prop_Send, "m_bTimerPaused"))
+		{
+			flSecondsRemaining = GetEntPropFloat(timer, Prop_Send, "m_flTimeRemaining");
+		}
+		else
+		{
+			flSecondsRemaining = GetEntPropFloat(timer, Prop_Send, "m_flTimerEndTime") - GetGameTime();
+		}
+	}
+	
+	return RoundFloat(flSecondsRemaining);
 }
+
+
 
 stock TF2TimerState:TF2_GetKothREDTimeLeft(&timeleft)
 {
-	if (!GameRules_GetProp("m_bPlayingKoth"))
+	if (!TF2_IsGameModeKoth())
 	{
 		timeleft = -1;
 		return TF2TimerState_NotApplicable;
 	}
 	
-	if (GameRules_GetProp("m_bInWaitingForPlayers"))
+	if (TF2_IsWaitingForPlayers())
 	{
 		timeleft = GetWaitingForPlayersTime();
 		return TF2TimerState_WaitingForPlayers;
@@ -403,7 +445,7 @@ stock TF2TimerState:TF2_GetKothREDTimeLeft(&timeleft)
 	
 	new timerEnt = GameRules_GetPropEnt("m_hRedKothTimer");
 	
-	timeleft = GetTimerTime(timerEnt);
+	timeleft = GetTimeRemaining(timerEnt);
 	
 	if (GetEntProp(timerEnt, Prop_Send, "m_bTimerPaused"))
 	{
@@ -415,13 +457,13 @@ stock TF2TimerState:TF2_GetKothREDTimeLeft(&timeleft)
 
 stock TF2TimerState:TF2_GetKothBLUTimeLeft(&timeleft)
 {
-	if (!GameRules_GetProp("m_bPlayingKoth"))
+	if (!TF2_IsGameModeKoth())
 	{
 		timeleft = -1;
 		return TF2TimerState_NotApplicable;
 	}
 	
-	if (GameRules_GetProp("m_bInWaitingForPlayers"))
+	if (TF2_IsWaitingForPlayers())
 	{
 		timeleft = GetWaitingForPlayersTime();
 		return TF2TimerState_WaitingForPlayers;
@@ -429,7 +471,7 @@ stock TF2TimerState:TF2_GetKothBLUTimeLeft(&timeleft)
 	
 	new timerEnt = GameRules_GetPropEnt("m_hBlueKothTimer");
 	
-	timeleft = GetTimerTime(timerEnt);
+	timeleft = GetTimeRemaining(timerEnt);
 	
 	if (GetEntProp(timerEnt, Prop_Send, "m_bTimerPaused"))
 	{
@@ -441,10 +483,11 @@ stock TF2TimerState:TF2_GetKothBLUTimeLeft(&timeleft)
 
 static stock GetWaitingForPlayersTime()
 {
+	new timeleft;
 	new timerEnt = GetEntityByTargetName(WAITING_FOR_PLAYERS_TIMER, "team_round_timer");
 	if (timerEnt > -1)
 	{
-		timeleft = GetTimerTime(timerEnt);
+		timeleft = GetTimeRemaining(timerEnt);
 	}
 	else
 	{
@@ -456,12 +499,12 @@ static stock GetWaitingForPlayersTime()
 
 stock GetEntityByTargetName(const String:targetName[], const String:classname[])
 {
-	entity = -1;
+	int entity = -1;
 	
 	while ((entity = FindEntityByClassname(entity, classname)) != -1)
 	{
 		decl String:tempTargetName[128];
-		GetEntPropString(entity, Prop_Send, "m_iName", tempTargetName, sizeof(tempTargetName));
+		GetEntPropString(entity, Prop_Data, "m_iName", tempTargetName, sizeof(tempTargetName));
 		
 		if (StrEqual(tempTargetName, targetName, false))
 		{
@@ -624,7 +667,7 @@ stock TF2_GetRoundCount()
 
 stock TF2_GetCurrentMvMWave()
 {
-	if (!TF2_IsMvM())
+	if (!TF2_IsGameModeMvM())
 	{
 		return 0;
 	}
@@ -640,7 +683,7 @@ stock TF2_GetCurrentMvMWave()
 
 stock TF2_GetMvMWaveCount()
 {
-	if (!TF2_IsMvM())
+	if (!TF2_IsGameModeMvM())
 	{
 		return 0;
 	}
