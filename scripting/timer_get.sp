@@ -51,6 +51,7 @@ public void OnPluginStart()
 	CreateConVar("tiemr_get_version", VERSION, "Timer Get version", FCVAR_NOTIFY|FCVAR_DONTRECORD|FCVAR_SPONLY);
 	
 	RegAdminCmd("timer_get", Cmd_TimerGet, ADMFLAG_GENERIC, "Get the current round time");
+	RegAdminCmd("koth_get", Cmd_KothGet, ADMFLAG_GENERIC, "Get the KOTH clocks");
 }
 
 public Action Cmd_TimerGet(int client, int args)
@@ -71,9 +72,9 @@ public Action Cmd_TimerGet(int client, int args)
 			ReplyToCommand(client, "Waiting for Players has %d seconds left.", timeleft);
 		}
 		
-		case TF2TimerState_Overtime:
+		case TF2TimerState_SuddenDeath:
 		{
-			ReplyToCommand(client, "Overtime has %d seconds left.", timeleft);
+			ReplyToCommand(client, "Sudden Death has %d seconds left.", timeleft);
 		}
 		
 		case TF2TimerState_Setup:
@@ -102,4 +103,43 @@ public Action Cmd_TimerGet(int client, int args)
 		}			
 	}
 	
+	return Plugin_Handled;
+}
+
+public Action Cmd_KothGet(int client, int args)
+{
+	if (!TF2_IsGameModeKoth())
+	{
+		ReplyToCommand(client, "This is not a KOTH map.");
+	}
+	
+	int redClock;
+	int bluClock;
+	
+	TF2TimerState state = TF2_GetKothClocks(redClock, bluClock);
+	
+	switch (state)
+	{
+		case TF2TimerState_WaitingForPlayers:
+		{
+			ReplyToCommand(client, "We are still in waiting for players for %d more seconds", redClock);
+		}
+		
+		case TF2TimerState_KothRedActive:
+		{
+			ReplyToCommand(client, "Red: %d, BLU: %d.  RED clock is active.", redClock, bluClock);
+		}
+		
+		case TF2TimerState_KothBlueActive:
+		{
+			ReplyToCommand(client, "Red: %d, BLU: %d.  BLU clock is active.", redClock, bluClock);
+		}
+		
+		case TF2TimerState_Paused:
+		{
+			ReplyToCommand(client, "Red: %d, BLU: %d.  Neither clock is active.", redClock, bluClock);
+		}
+	}
+	
+	return Plugin_Handled;
 }

@@ -86,7 +86,7 @@ enum TF2TimerState
 {
 	TF2TimerState_NotApplicable,		/**< We are in a round, but timers don't apply. */
 	TF2TimerState_WaitingForPlayers,	/**< We are currently in waiting for players */
-	TF2TimerState_Overtime,			/**< We are currently in waiting for players */
+	TF2TimerState_SuddenDeath,			/**< We are currently in Sudden Death */
 	TF2TimerState_Setup,				/**< We are in Setup time and timer reflects that */
 	TF2TimerState_Paused,				/**< Has timers, but they're paused */
 	TF2TimerState_Active,				/**< We are actively in a round */
@@ -275,6 +275,51 @@ stock TF2_GetRoundScoreData(client, TF2ScoreData:dataType)
 }
 
 /**
+ * Get the estimate of time left on each of the KOTH clocks.
+ * 
+ * @param redTimeLeft	Time in seconds left on the RED clock.
+ * @param blueTimeLeft	Time in seconds left on the BLU clock.
+ * 
+ * @return	TF2TimerState_NotApplicable if called on a non-KOTH map.
+ * 			TF2TimerState_WaitingForPlayers if called during waiting for players.
+ * 			TF2TimerState_KothRedActive if RED is active.
+ * 			TF2TimerState_KothBlueActive if BLU is active.
+ * 			TF2TimerState_Paused if both clocks are paused (before cap, boss lock)
+ */
+stock TF2TimerState:TF2_GetKothClocks(&redTimeleft, &blueTimeLeft)
+{
+	if (!TF2_IsGameModeKoth())
+	{
+		return TF2TimerState_NotApplicable;
+	}
+	
+	if (TF2_IsWaitingForPlayers())
+	{
+		new timeleft = GetWaitingForPlayersTime();
+		redTimeleft = timeleft;
+		blueTimeLeft = timeleft;
+		return TF2TimerState_WaitingForPlayers;
+	}
+	
+	new TF2TimerState:redActive;
+	new TF2TimerState:bluActive;
+	
+	redActive = TF2_GetKothRedTimeLeft(redTimeleft);
+	bluActive = TF2_GetKothBlueTimeLeft(blueTimeLeft);
+	
+	if (redActive == TF2TimerState_Active)
+	{
+		return TF2TimerState_KothRedActive;
+	}
+	else if (bluActive == TF2TimerState_Active)
+	{
+		return TF2TimerState_KothBlueActive;
+	}
+	
+	return TF2TimerState_Paused;
+}
+
+/**
  * Returns an estimate of the time left before the round ends. If the map has no timers, then the time left returned will always be infinite. 
  * 
  * @param timeleft	Variable to store the time, in seconds.  If the value is less than 0, the time limit is infinite. Note: overtime will have 0 left on the clock.
@@ -286,6 +331,8 @@ stock TF2TimerState:TF2_GetRoundTimeLeft(&timeleft)
 	timeleft = -1;
 
 	new bool:bInSetup = false;
+	
+	new TF2GameType:gameType = TF2_GetGameType();
 	
 	if (TF2_IsSetupTime())
 	{
@@ -313,34 +360,23 @@ stock TF2TimerState:TF2_GetRoundTimeLeft(&timeleft)
 	if (TF2_IsGameModeKoth())
 	{
 		new tempRedTimeLeft = -1;
-		new tempBluTimeLeft = -1;
-		new TF2TimerState:redActive;
-		new TF2TimerState:bluActive;
+		new tempBlueTimeLeft = -1;
+
+		new TF2TimerState:kothActive = TF2_GetKothClocks(tempRedTimeLeft, tempBlueTimeLeft);
 		
-		redActive = TF2_GetKothREDTimeLeft(tempRedTimeLeft);
-		bluActive = TF2_GetKothBLUTimeLeft(tempBluTimeLeft);
-		
-		if (redActive == TF2TimerState_Active)
+		if (kothActive == TF2TimerState_KothRedActive)
 		{
 			timeleft = tempRedTimeLeft;
-			return TF2TimerState_KothRedActive;
 		}
-		else
-		if (bluActive == TF2TimerState_Active)
+		else if (kothActive == TF2TimerState_KothBlueActive)
 		{
-			timeleft = tempBluTimeLeft;
-			return TF2TimerState_KothBlueActive;
+			timeleft = tempBlueTimeLeft;
 		}
-		/*
-		else
-		{
-			timeleft = -1;
-			return TF2TimerState_Paused;
-		}
-		*/
+		
+		return kothActive;
 	}
 	
-	if (TF2_GetGameType() == TF2GameType_CTF && !TF2_IsGameModeSD())
+	if (gameType == TF2GameType_CTF && !TF2_IsGameModeSD())
 	{
 		new bool:valid = GetMapTimeLeft(timeleft);
 		if (valid)
@@ -380,9 +416,9 @@ stock TF2TimerState:TF2_GetRoundTimeLeft(&timeleft)
 				return TF2TimerState_Setup;
 			}
 			
-			if (TF2_IsOvertime())
+			if (TF2_IsSuddenDeath() && gameType != TF2GameType_Arena)
 			{
-				return TF2TimerState_Overtime;
+				return TF2TimerState_SuddenDeath;
 			}
 			
 			return TF2TimerState_Active;
@@ -429,7 +465,7 @@ static stock GetTimeRemaining(timer)
 
 
 
-stock TF2TimerState:TF2_GetKothREDTimeLeft(&timeleft)
+static stock TF2TimerState:TF2_GetKothRedTimeLeft(&timeleft)
 {
 	if (!TF2_IsGameModeKoth())
 	{
@@ -455,18 +491,12 @@ stock TF2TimerState:TF2_GetKothREDTimeLeft(&timeleft)
 	return TF2TimerState_Active;
 }
 
-stock TF2TimerState:TF2_GetKothBLUTimeLeft(&timeleft)
+static stock TF2TimerState:TF2_GetKothBlueTimeLeft(&timeleft)
 {
 	if (!TF2_IsGameModeKoth())
 	{
 		timeleft = -1;
 		return TF2TimerState_NotApplicable;
-	}
-	
-	if (TF2_IsWaitingForPlayers())
-	{
-		timeleft = GetWaitingForPlayersTime();
-		return TF2TimerState_WaitingForPlayers;
 	}
 	
 	new timerEnt = GameRules_GetPropEnt("m_hBlueKothTimer");
