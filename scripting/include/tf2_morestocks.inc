@@ -334,29 +334,12 @@ stock TF2TimerState:TF2_GetRoundTimeLeft(&timeleft)
 	
 	new TF2GameType:gameType = TF2_GetGameType();
 	
-	if (TF2_IsSetupTime())
-	{
-		bInSetup = true;
-	}
-	else
 	if (TF2_IsWaitingForPlayers())
 	{
 		timeleft = GetWaitingForPlayersTime();
 		return TF2TimerState_WaitingForPlayers;
 	}
 	else
-	if (TF2_IsOvertime())
-	{
-		timeleft = 0;
-		return TF2TimerState_Active;
-	}
-	
-	if (TF2_IsGameModeMvM())
-	{
-		timeleft = -1;
-		return TF2TimerState_NotApplicable;
-	}
-	
 	if (TF2_IsGameModeKoth())
 	{
 		new tempRedTimeLeft = -1;
@@ -375,19 +358,10 @@ stock TF2TimerState:TF2_GetRoundTimeLeft(&timeleft)
 		
 		return kothActive;
 	}
-	
-	if (gameType == TF2GameType_CTF && !TF2_IsGameModeSD())
+	else
+	if (TF2_IsSetupTime())
 	{
-		new bool:valid = GetMapTimeLeft(timeleft);
-		if (valid)
-		{
-			return TF2TimerState_Active;
-		}
-		else
-		{
-			timeleft = -1;
-			return TF2TimerState_NotApplicable;
-		}
+		bInSetup = true;
 	}
 	
 	new bool:bHasTimer = false;

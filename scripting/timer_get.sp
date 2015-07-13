@@ -127,17 +127,17 @@ public Action Cmd_KothGet(int client, int args)
 		
 		case TF2TimerState_KothRedActive:
 		{
-			ReplyToCommand(client, "Red: %d, BLU: %d.  RED clock is active.", redClock, bluClock);
+			ReplyToCommand(client, "RED: %d, BLU: %d.  RED clock is active.", redClock, bluClock);
 		}
 		
 		case TF2TimerState_KothBlueActive:
 		{
-			ReplyToCommand(client, "Red: %d, BLU: %d.  BLU clock is active.", redClock, bluClock);
+			ReplyToCommand(client, "RED: %d, BLU: %d.  BLU clock is active.", redClock, bluClock);
 		}
 		
 		case TF2TimerState_Paused:
 		{
-			ReplyToCommand(client, "Red: %d, BLU: %d.  Neither clock is active.", redClock, bluClock);
+			ReplyToCommand(client, "RED: %d, BLU: %d.  Neither clock is active.", redClock, bluClock);
 		}
 	}
 	
