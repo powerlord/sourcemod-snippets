@@ -100,10 +100,12 @@ public Action Cmd_Explode(int client, int args)
 
 public Action Cmd_Implode(int client, int args)
 {
-	char itemString[1024];
-	int bytes = ImplodeArrayListStrings(g_TestArray, ",", itemString, sizeof(itemString));
+	int len = GetArrayListImplodeSize(g_TestArray, 1, ITEM_SIZE);
+	char[] itemString = new char[len];
 	
-	ReplyToCommand(client, "%d bytes, string: \"%s\"", bytes, itemString);
+	int bytes = ImplodeArrayListStrings(g_TestArray, ",", itemString, len);
+	
+	ReplyToCommand(client, "Allocated %d, %d bytes, string: \"%s\"", len, bytes, itemString);
 	
 	return Plugin_Handled;
 }
@@ -132,33 +134,36 @@ public Action Cmd_MapBothExplode(int client, int args)
 
 public Action Cmd_MapKeyImplode(int client, int args)
 {
-	char itemString[1024];
+	int len = GetStringMapImplodeSize(g_TestMap, 1, ImplodePart_Key);
+	char[] itemString = new char[len];
 		
-	int bytes = ImplodeStringMapToString(g_TestMap, ",", itemString, sizeof(itemString), ImplodePart_Key);
+	int bytes = ImplodeStringMapToString(g_TestMap, ",", itemString, len, ImplodePart_Key);
 
-	ReplyToCommand(client, "%d bytes, string: \"%s\"", bytes, itemString);
+	ReplyToCommand(client, "Allocated %d, %d bytes, string: \"%s\"", len, bytes, itemString);
 
 	return Plugin_Handled;
 }
 
 public Action Cmd_MapValImplode(int client, int args)
 {
-	char itemString[1024];
+	int len = GetStringMapImplodeSize(g_TestMap, 1, ImplodePart_Value, .valueMaxLength=ITEM_SIZE);
+	char[] itemString = new char[len];
 		
-	int bytes = ImplodeStringMapToString(g_TestMap, ",", itemString, sizeof(itemString), ImplodePart_Value);
+	int bytes = ImplodeStringMapToString(g_TestMap, ",", itemString, len, ImplodePart_Value);
 
-	ReplyToCommand(client, "%d bytes, string: \"%s\"", bytes, itemString);
+	ReplyToCommand(client, "Allocated %d, %d bytes, string: \"%s\"", len, bytes, itemString);
 
 	return Plugin_Handled;
 }
 
 public Action Cmd_MapBothImplode(int client, int args)
 {
-	char itemString[1024];
-	
-	int bytes = ImplodeStringMapToString(g_TestMap, ",", itemString, sizeof(itemString), ImplodePart_Both, ":");
+	int len = GetStringMapImplodeSize(g_TestMap, 1, ImplodePart_Both, 1, ITEM_SIZE);
+	char[] itemString = new char[len];
+		
+	int bytes = ImplodeStringMapToString(g_TestMap, ",", itemString, len, ImplodePart_Both, ":");
 
-	ReplyToCommand(client, "%d bytes, string: \"%s\"", bytes, itemString);
+	ReplyToCommand(client, "Allocated %d, %d bytes, string: \"%s\"", len, bytes, itemString);
 
 	return Plugin_Handled;
 }
