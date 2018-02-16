@@ -4,7 +4,7 @@
  * Name
  * Description
  *
- * Name (C)2017 Powerlord (Ross Bemrose).  All rights reserved.
+ * Name (C)2018 Powerlord (Ross Bemrose).  All rights reserved.
  * =============================================================================
  * License at end of file
  */
